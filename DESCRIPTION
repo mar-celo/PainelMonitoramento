@@ -1,0 +1,17 @@
+Package: PainelMonitoramento
+Title: An Amazing Shiny App
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Marcelo",
+           family = "Ribeiro",
+           role = c("aut", "cre"),
+           email = "marcelo.ribeiro@gestao.gov.br")
+Description: What the package does (one paragraph).
+License: What license is it under?
+Imports: 
+    config,
+    golem,
+    shiny
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
