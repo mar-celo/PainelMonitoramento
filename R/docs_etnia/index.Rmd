@@ -1,0 +1,1280 @@
+---
+title: 'Painel de Monitoramento: Negros em Cargos Comissionados'
+output: 
+  html_document: 
+    theme: default
+    css: styles-2.css
+    # css: css_gabriel.css
+    toc: true
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+<!-- ```{=html, eval = F,include = F} -->
+
+
+
+<style type="text/css">
+
+.main-container {
+
+  max-width: 90%;
+
+  margin-left: auto;
+
+  margin-right: auto;
+
+}
+
+strong {
+    font-weight: 700;
+    color: #0c326f;
+
+}
+
+label {
+    display: inline-block;
+    max-width: 100%;
+    margin-bottom: 5px;
+    font-weight: 700;
+    color: #0c326f;
+}
+
+element.style {
+    width: 242.639px;
+    color: #0c326f;
+}
+
+</style>
+<!-- ``` -->
+
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE, warning = FALSE)
+source("../lib/setup_rmd.R")
+```
+
+```{r pkg-load}
+
+# Carregar pacotes
+library(DT) 
+library(scales)
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(zoo)
+library(lubridate)
+library(plotly)
+library(crosstalk)
+library(readxl)
+library(RColorBrewer)
+library(reactablefmtr)
+library(sysfonts)
+library(showtext)
+library(htmltools)
+library(htmlwidgets)
+library(dataui)
+
+
+ggplotly_c <- function(gg_obj){
+  ptly_obj <- ggplotly(gg_obj)
+  ptly_obj$x$data <- lapply(ptly_obj$x$data, function(tr) {
+    tr$name <- 
+      tr$name %>%
+      gsub("^\\(|\\)$","",.) %>%
+      gsub(",1$", "", .)
+    tr})
+  ptly_obj
+  }
+```
+
+```{r data-load}
+
+# Total: evolução no tempo
+comissionados_negros_mes <- readRDS("../data/Tab_inds_1_e_2.rds") %>%
+  rename(`Mes/ano` = anomes,
+         `Cargo-Funcao` = decreto_nivel) %>%
+  .[,`Percentual de pessoas negras` :=  round(p_negras,1)]
+
+# Por órgão vinculado
+dados <- readRDS("../data/Tab.rds") |> 
+  filter(Órgão != "Agencia Brasileira De Inteligencia") %>%
+  setnames(c("Órgão","Órgão Superior"),
+           c("Orgao","Orgao Superior")) %>%
+  select(-`Orgao Superior`) %>%
+  setDT 
+
+setnames(dados,
+         gsub("N.v","Niv",names(dados))
+         )
+
+sd_total <- SharedData$new(dados, group = "orgao_vinc",key = ~Orgao)
+
+
+# Por órgão superior
+dados_sup <- readRDS("../data/Tab_sup.rds")  %>%
+  setnames(c("Órgão Superior"),
+           c("Orgao Superior"))
+
+setnames(dados_sup,
+         gsub("N.v","Niv",names(dados_sup))
+         )
+
+sd_sup_total <- SharedData$new(dados_sup, group = "orgao_sup")
+
+# indicador 3
+Tab_ind3 <- readRDS("../data/Tab_ind3.rds")  %>%
+  # left_join(
+  #   dados[,.(`Orgao`,id)],
+  #   by = c("orgao_vinculado_cargos_e_funcoes" = "Orgao")) %>% 
+  .[,indice_suficiencia :=  round(indice_suficiencia,2)] %>%
+  arrange(-indice_suficiencia) %>%
+  select(#id,
+         orgao_vinculado_cargos_e_funcoes,
+         decreto_nivel,
+         total_dist,
+         Total_ocupados,
+         total_negras,
+         necessidade_vagas,
+         cargos_disponiveis,
+         indice_suficiencia) %>%
+  rename(
+    # `Órgão Superior` = orgao_superior_cargos_e_funcoes,
+    # `Órgão` = orgao_vinculado_cargos_e_funcoes,
+    # `Cargo-Função` = decreto_nivel
+    # `Orgao Superior` = orgao_superior_cargos_e_funcoes,
+    `Orgao` = orgao_vinculado_cargos_e_funcoes,
+    `Cargo-Funcao` = decreto_nivel,
+    `Cargos distribuídos` = total_dist,
+    `Cargos ocupados` = Total_ocupados,
+    `Cargos ocupados por pessoas negras` = total_negras,
+    `Necessidade de vagas para a meta` = necessidade_vagas,
+    `Cargos vagos` = cargos_disponiveis,
+    `Indice de suficiencia de vagas` = indice_suficiencia
+  ) |> 
+  filter(Orgao != "Agencia Brasileira De Inteligencia")
+
+## separando níveis
+Tab_ind3_1a12 <- Tab_ind3 %>%
+  filter(`Cargo-Funcao` == "Nível 1 a 12") %>%
+  select(-one_of("Cargo-Funcao"))
+
+Tab_ind3_13a17 <- Tab_ind3 %>%
+  filter(`Cargo-Funcao` == "Nível 13 a 17") %>%
+  select(-one_of("Cargo-Funcao"))
+
+
+## tabelas reativas
+sd_ind3_1a12 <- SharedData$new(Tab_ind3_1a12, group = "orgao_vinc",
+                               key = ~Orgao)
+sd_ind3_13a17 <- SharedData$new(Tab_ind3_13a17, group = "orgao_vinc",
+                                key = ~Orgao)
+
+
+# indicador 4
+Tab_ind4_mes <- readRDS( "../data/Tab_inds_4_mes.rds") %>%
+  rename(
+    `Mes/ano` = anomes,
+    `Cor-origem etnica` = nome_cor_origem_etnica,
+    `Razao equidade, niveis 1 a 12` = ind4_1_a_12,
+    `Razao equidade, niveis 13 a 17` = ind4_13_a_17
+  )
+
+Tab_ind4_orgaos <- readRDS( "../data/Tab_inds_4_orgaos.rds") %>%  
+  # left_join(
+  #   dados[,.(`Orgao`,id)],
+  #   by = c("orgao_vinculado_cargos_e_funcoes" = "Orgao")) %>% 
+  .[,nome_cor_origem_etnica := iconv(nome_cor_origem_etnica,
+                                     "Latin1",
+                                     "ASCII//TRANSLIT")]   %>%
+  filter(nome_cor_origem_etnica == "Negras")%>% 
+  select(
+    # id,
+    orgao_vinculado_cargos_e_funcoes,
+    -nome_cor_origem_etnica,
+    qtde,
+    matches("N.vel"),
+    matches("ind4_")
+    ) %>%
+  setorder(-ind4_13_a_17) %>% 
+  rename(
+    # `Orgao Superior` = orgao_superior_cargos_e_funcoes,
+    `Orgao` = orgao_vinculado_cargos_e_funcoes,
+    # `Cor-origem etnica` = nome_cor_origem_etnica,
+    `Percentual efetivos negros` = qtde,
+    `Razao equidade, niveis 1 a 12` = ind4_1_a_12,
+    `Razao equidade, niveis 13 a 17` = ind4_13_a_17
+  )
+  
+setnames(Tab_ind4_orgaos,
+         gsub("N.v","% de negros, Niv",names(Tab_ind4_orgaos))
+         )
+
+Tab_ind4_orgaos <- setorder(Tab_ind4_orgaos,`Razao equidade, niveis 13 a 17`,
+                            na.last = T)
+
+
+
+# Tab_ind4_orgaos[, `Cor-origem etnica` := gsub("Ra.a","Raca",`Cor-origem etnica`)]
+
+sd_ind4 <- SharedData$new(Tab_ind4_orgaos, group = "orgao_vinc",
+                          key = ~Orgao)
+
+
+
+# indicador 4
+Tab_ind5_mes <- readRDS( "../data/Tab_inds_5_mes.rds") %>%
+  rename(
+    `Mes/ano` = anomes,
+    `Cor-origem etnica` = nome_cor_origem_etnica,
+    `Salario medio` = salario_medio,
+    `Equidade remuneratoria` = ind5
+  )
+
+Tab_ind5_orgaos <- readRDS( "../data/Tab_inds_5_orgaos.rds")  %>%  
+  # left_join(
+  #   dados[,.(`Orgao`,id)],
+  #   by = c("orgao_vinculado_cargos_e_funcoes" = "Orgao")) %>%
+  setorder(-Negra,-orgao_superior_cargos_e_funcoes)%>% 
+  select(-orgao_superior_cargos_e_funcoes) %>%
+  rename(
+    # `Orgao Superior` = orgao_superior_cargos_e_funcoes,
+    `Orgao` = orgao_vinculado_cargos_e_funcoes,
+    `Equidade remuneratoria, pessoas Pretas` = Preta,
+    `Equidade remuneratoria, pessoas Pardas` = Parda,
+    `Equidade remuneratoria, pessoas Negras` = Negra
+  ) 
+  
+
+setorder(Tab_ind5_orgaos,`Equidade remuneratoria, pessoas Negras`)
+
+# Tab_ind4_orgaos[, `Cor-origem etnica` := gsub("Ra.a","Raca",`Cor-origem etnica`)]
+
+sd_ind5 <- SharedData$new(Tab_ind5_orgaos, group = "orgao_vinc",
+                          key = ~Orgao)
+
+
+Tab_ind5_niveis <- readRDS( "../data/Tab_inds_5_niveis.rds")
+
+```
+
+
+<!-- # **Política 1: Cotas para ingresso em concurso público** -->
+
+<!-- Objetivo: Monitorar a efetividade das políticas de cotas no ingresso em cargo efetivo de grupos historicamente sub-representados no serviço público. -->
+
+<!-- Elementos de monitoramento: -->
+
+<!-- * Marco legal aplicável -->
+
+<!-- * Base de dados disponível (SIAPE e estudos complementares) -->
+
+<!-- * Marcadores de identificação racial e de inclusão -->
+
+<!-- * Evolução da ocupação de cargos efetivos: -->
+
+<!--   * Pessoas negras (antes e após o decreto) -->
+
+<!--   * Pessoas indígenas (antes e após o decreto) -->
+
+<!--   * Pessoas com deficiência (PCD) (antes e após o decreto) -->
+
+<!-- * Dados de ingresso por cotas: -->
+
+<!--   * Marcador SIAPE (mais recente) -->
+
+<!--   * Estudo ENAP -->
+
+
+
+# **Política 2: cotas para cargos de liderança [(Decreto nº 11.443/2023)](https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/decreto/d11443.htm)**
+
+
+Meta normativa: 30% de ocupação por pessoas negras nos cargos CCE e FCE:
+
+1. Nos níveis 1 a 12
+
+1. Nos Níveis 13 e superiores
+
+
+
+# **Indicador 1: Participação de negros em cargos CCE/FCE**
+
+
+* Definição: Percentual, dentre os ocupantes de cargos CCE/FCE, de pessoas que se autodeclaram pretas ou pardas.
+
+* Desagregações:
+
+  * Órgão superior
+  
+  * Órgão
+  
+  * Níveis (1 a 12 X 13 a 17)
+  
+  * Gênero
+
+Obs: a partir do indicador 1, serão apresentados *rankings* dos órgãos superiores e dos órgãos de vínculo, em ordem decrescente de participação de negros em cargos CCE/FCE, para cada grupo de níveis, destacando aqueles que ainda não atingiram o percentual mínimo do decreto. 
+
+
+## **Evolução mensal do percentual de negros em Cargos Comissionados na Administração Pública Federal**
+
+```{r serie}
+dt_decreto <- as.yearmon("Mar 2023","%b %Y")
+comissionados_negros_mes %>% 
+  ggplot_cat(aes(x = `Mes/ano`,
+                 y = `Percentual de pessoas negras`,
+                 col = `Cargo-Funcao`)) + 
+  geom_line() + 
+  geom_point(size = 2.2,show.legend = F) + 
+  # geom_text(aes(label = ifelse(`Mes/ano` == dt_decreto,
+  #                              "Data do decreto",
+  #                              NA))) +
+  guides(color = guide_legend(override.aes = list(linetype = 0))) + 
+  geom_vline(xintercept = dt_decreto,linetype = 2)+
+  geom_hline(yintercept = 30,
+             col = pal_primaria["principal"]) +
+  # ylim(0,1.1*max(comissionados_negros_mes$p_negra)) + 
+  labs(x = "",col = "",y = "") -> p_neg_mes
+
+bscols(ggplotly_c(p_neg_mes),
+       widths = 12,
+       device = "sm")
+```
+
+
+
+```{r pizza, eval = F}
+# Retirar ABIN 
+
+data_funcao <- dados |> select(`Órgão Superior`,
+                               Órgão, `Raça/Cor`, 
+                               `Cargo-Função`, Fem, Mas, Total) |> 
+  tidyr::pivot_wider(names_from = `Cargo-Função`, values_from = Total) |> 
+  filter(Órgão != "Agencia Brasileira De Inteligencia")
+
+
+sd_pizza <- SharedData$new(data_funcao, group = "funcao")
+
+filtro_Orgao_pizza <- filter_select("Orgao_PIZZA", 
+                              "Selecione um Órgão:", 
+                              sd_pizza, 
+                              allLevels = TRUE,
+                              ~Órgão,
+                              multiple = FALSE
+                              )
+
+pier_Nivel1a12 <- plot_ly() |>  
+  add_pie(
+    data = sd_pizza,
+    labels = ~`Raça/Cor`,
+    values = ~`Nível 1 a 12`,
+    name = "Nível 1 a 12"
+    #domain = list(x = c(0, 0.4), y = c(0, 1))
+  )   
+
+pier_Nivel13a17 <- plot_ly() |>  
+  add_pie(
+    data = sd_pizza,
+    labels = ~`Raça/Cor`,
+    values = ~`Nível 13 a 17`,
+    name = "Nível 13 a 17"
+    #domain = list(x = c(0.6, 1), y = c(0, 1))
+  )   
+   
+
+figpier_Nivel1a12 <- pier_Nivel1a12 |>  
+  layout(title = "Nível 1 a 12",
+         plot_bgcolor='#e5ecf6', 
+         xaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'), 
+         yaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'),
+         showlegend=TRUE,showlegend2=TRUE, 
+         margin = 0.01) 
+
+figpier_Nivel13a17 <- pier_Nivel13a17 |>  
+  layout(title = "Nível 13 a 17",
+         plot_bgcolor='#e5ecf6', 
+         xaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'), 
+         yaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'),
+         showlegend=TRUE,showlegend2=TRUE, 
+         margin = 0.01) 
+
+
+
+```
+
+```{r}
+# table
+
+# Definir as configurações da tabela, incluindo o idioma em Português Brasil
+
+
+# Criar a tabela usando datatable com as configurações personalizadas
+configuracao <- list(
+  language = list(
+    infoFiltered = "(filtrado num total de _MAX_ registros)",
+    info = "Exibindo _START_ até _END_ de _TOTAL_ registros",
+    lengthMenu = "Mostrar _MENU_ registros por página",
+    search = "Pesquisar:",
+    paginate = list(
+      first = "Primeiro",
+      last = "Último",
+      `next` = "Próximo",
+      previous = "Anterior"),
+    aria = list(
+      sortAscending = ": ativar para classificar coluna em ordem crescente",
+      sortDescending = ": ativar para classificar coluna em ordem decrescente"
+    )
+  ),
+  dom = 'Bfrtip',
+  buttons = c('csv', 'excel', 'pdf', 'print')
+  
+)
+```
+
+
+
+## **Percentual de Pessoas Negras (Pretas/Pardas) em Cargos Comissionados por Órgão**
+
+
+```{r pizza_nivel_1a12, eval = F, fig.height=12, fig.width=12}
+#
+bscols(filtro_Orgao_pizza, widths = 6)
+bscols( 
+       figpier_Nivel1a12,
+       figpier_Nivel13a17,
+       widths = c( 6, 6), 
+       device = "sm")
+```
+
+
+```{r ind1_total_sup}
+pal_low <- function(x,li,divisor){
+  col_numeric(
+    palette = c(pal_primaria["ponto"],"white"),
+    domain = c(li,divisor)
+  ) -> fcol
+  fcol(x)
+  }
+
+pal_high <- function(x,ls,divisor){
+  col_numeric(
+    palette = c("white",pal_primaria["principal"]),
+    domain = c(divisor,ls)
+    )-> fcol
+  fcol(x)
+  }
+
+
+color_fun <- function(x,li,divisor,ls){
+  ifelse(x <= divisor,
+         pal_low(x,li,divisor),
+         pal_high(x,ls,divisor))
+}
+
+
+dom_sup_1a12 <- dados_sup$`Nivel 1 a 12`
+dom_sup_13a17 <- dados_sup$`Nivel 13 a 17`
+
+dt2_sup <- sd_sup_total |> 
+  DT::datatable(#filter = "top",
+                #style = "bootstrap",
+                class = "compact",
+                width = "100%",
+                extensions = 'Buttons',
+                options = configuracao,
+                caption = #"Por órgão superior"
+                  tags$caption(
+                    style =
+                    "caption-side: top;
+                    text-align: left;
+                    font-size: 24px;
+                    color: #0000AA;",
+                    "Por órgão superior"
+                    )
+                ) %>%
+  formatStyle(
+    'Nivel 1 a 12',
+    background = styleEqual(dom_sup_1a12,color_fun(dom_sup_1a12,0,30,100)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Nivel 13 a 17',
+    background = styleEqual(dom_sup_13a17,color_fun(dom_sup_13a17,0,30,100)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  )
+
+  
+# Sys.setlocale("LC_TIME", "pt_BR.ISO8859-1")
+    
+```
+
+```{r tabela_ind1_sup, eval = F}
+# bscols(dt2_sup,
+#        widths = 6,
+#        device = "sm")
+```
+
+```{r ind1_total}
+
+dom_1a12 <- dados$`Nivel 1 a 12`
+dom_13a17 <- dados$`Nivel 13 a 17`
+
+dt2 <- sd_total |> 
+  DT::datatable(#filter = "top",
+                #style = "bootstrap",
+                class = "compact",
+                width = "100%",
+                extensions = 'Buttons',
+                options = configuracao,
+                caption = 
+                  tags$caption(
+                    style = 
+                    "caption-side: top;
+                    text-align: left;
+                    font-size: 24px;
+                    color: #0000AA;",
+                    "Por órgão vinculado"
+                    )
+                ) %>%
+  formatStyle(
+    'Nivel 1 a 12',
+    background = styleEqual(dom_1a12,color_fun(dom_1a12,0,30,100)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Nivel 13 a 17',
+    background = styleEqual(dom_13a17,color_fun(dom_13a17,0,30,100)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  )
+
+  
+# Sys.setlocale("LC_TIME", "pt_BR.ISO8859-1")
+    
+```
+
+```{r tabela_ind1, eval = T}
+bscols(dt2_sup,
+       dt2,
+       widths = c(6,6),
+       device = "sm")
+```
+
+
+
+
+```{r Rectable_1a12, eval = F }
+
+# ### **Representatividade de Pessoas Negras (Pretas/Pardas) em Cargos Comissionados por Órgão**
+# 
+# As tabelas a seguir apresentam uma análise da distribuição de pessoas negras (pretas/pardas) em cargos comissionados de níveis 1 a 12 e de níveis 13 a 17, categorizados de acordo com o Órgão Superior ao qual estão subordinados. Os percentuais indicados fornecem uma visão clara da representatividade dessas pessoas em cargos de liderança e decisão dentro de cada órgão.
+# 
+# Para uma compreensão mais detalhada da representatividade de pessoas negras (pretas/pardas) a nível de órgão, é possível visualizar a mesma classificação dos órgãos subordinados ao clicar nas setas $\blacktriangleright$ de cada Órgão Superior. Essa visualização proporciona uma análise mais granular, permitindo identificar discrepâncias ou tendências específicas dentro de cada órgão em relação à inclusão e diversidade nos cargos comissionados.
+
+
+data <- readRDS("../data/data_1a12.rds")
+subdata <-  readRDS("../data/subdata1a12.rds")
+
+# Rectable 1a 12 ----------------------------------------------------------
+
+# color palette for difficulty scale
+text_color="#555555"
+# pal_strive<-c('#50C4AA', '#B6C95C', '#FACB3E', '#FC800F', '#FF4759')
+pal_strive <- pal_complementar[1:5]
+
+# Nivel 1 a 12 ------------------------------------------------------------
+
+#Create Reactable
+table<-reactable(
+  data,
+  theme =  default(),
+  defaultColDef = colDef(vAlign="center", align="center", headerVAlign="center"),
+  columns = list(
+    `Órgão Superior` = colDef(name="Órgão Superior",
+                              align="center", vAlign="center", width=220,
+                              # resizable = TRUE,sortable = TRUE,
+                              # filterable = TRUE,
+                              cell = function(value) {
+                                tagList(
+                                  div(style = "display: inline-block;vertical-align:middle;width:50px"),
+                                  div(style = "display: inline-block;vertical-align:middle;", value)
+                                )
+                              }
+    ),
+    Órgão = colDef(name="", maxWidth=130, align="left"),
+    rank = colDef(name="", style=list(fontSize=13), maxWidth=50, align="right"),
+    `Nível 1 a 12`=colDef(name="Nº de Pessoas Negras", minWidth=50),
+    Total_serv_1a12 = colDef(name="Nº de Cargos/Funções", minWidth=50),
+    `% Nível 1 a 12` =colDef(name="%", minWidth=100,
+                             cell=data_bars(data,
+                                            bar_height=8,
+                                            text_size=11,
+                                            text_color="rgb(51, 51, 51)",
+                                            text_position = "outside-end",
+                                            background = "transparent",
+                                            round_edges = TRUE,
+                                            fill_color=c("#FFBC51",'#FF3A3A'),
+                                            fill_gradient = TRUE)),
+    tendencia_1a12 = colDef(name="Tendência % Últimos 5 meses",  maxWidth=140,
+                            footer="% Últimos 5 meses",
+                            cell=react_sparkline(data, labels=c("first","last"),
+                                                 label_size = "0.75em",
+                                                 tooltip_size = "1.1em",
+                                                 decimals = 1,
+                                                 tooltip_type=1,
+                                                 line_color = "rgb(51, 51, 51)")
+    )
+  ),
+  #Sub-Table
+  details = function(index){
+    new = subdata[subdata$`Órgão Superior` == data$`Órgão Superior`[index],]
+    reactable(data=new,
+              defaultColDef = colDef(vAlign="center", align="center", headerVAlign="center"),
+              theme =  default(),
+              columns = list(
+                `Órgão Superior`=colDef(show=FALSE),
+                rank = colDef(name="Posição por Órgão", width=295),
+                Órgão = colDef(name="Órgão", maxWidth=130, align="left", footer="", footerStyle=list(color='black')), #
+                rank = colDef(name="", style=list(fontSize=13), maxWidth=50, align="right"),
+                `Nível 1 a 12`=colDef(name="Nº de Pessoas Negras", minWidth=50),
+                Total_serv_1a12 = colDef(name="Nº de Cargos/Funções", minWidth=50),
+                `% Nível 1 a 12` = colDef(name="", minWidth=100,
+                                          cell=data_bars(new,
+                                                         bar_height=8,
+                                                         text_size=11,
+                                                         text_color="rgb(51, 51, 51)",
+                                                         text_position = "outside-end",
+                                                         background = "transparent",
+                                                         round_edges = TRUE,
+                                                         fill_color=c("#FFBC51",'#FF3A3A'),
+                                                         fill_gradient = TRUE)),
+                # difficulty = colDef(name="", align="center", maxWidth=120,
+                #                     cell=color_tiles(new, bias= 0.4, colors=pal_strive)),
+                tendencia_1a12 = colDef(name="",  maxWidth=140,
+                                        cell=reactablefmtr::react_sparkline(new, labels=c("first","last"), 
+                                                                            
+                                                                            decimals = 1,
+                                                             line_color = "rgb(51, 51, 51)")
+                )
+              )
+    )
+  }
+)%>%
+  google_font(font_family="Roboto", font_weight = 300)
+
+# #use html widgest to prepend an dappend header and footer
+html_object_1a12<-table|>
+  prependContent(
+    tagList(
+      div(style = "vertical-align:middle;text-align:center;background-color:#1351B4;color:white;padding-top:25px;padding-bottom:4px;font-size:24px;",
+          "Percentual de Pessoas Negras (Pretas/Pardas) em Cargos Comissionados de Níveis de 1 a 12"),
+      div(style = "vertical-align:middle;text-align:center;background-color:#1351B4;color:#BBBBBB;padding-top:5px;padding-bottom:20px;font-size:14px;",
+          "Decreto nº 11.443/2023 que reserva às pessoas negras (pretas e pardas) percentual mínimo de 30% na ocupação em Cargos Comissionados Executivos (CCE) e Funções Comissionadas Executivas (FCE)")
+    )
+  )|>
+  appendContent(
+    p("Fonte: Painel Estatístico de Pessoal",
+      style = paste0(
+        "font-family:","Roboto; sans;",
+        "font-size: 12px;" ,
+        "text-align:right"))
+  )
+html_object_1a12
+#saveWidget(html_object_1a12, "nivel1a12.html", selfcontained = TRUE)
+
+```
+
+```{r Rectable_13a17, eval = F}
+
+data <- readRDS("../data/data_13a17.rds")
+subdata <-  readRDS("../data/subdata_13a17.rds")
+
+# Rectable 13 a 17 ----------------------------------------------------------
+
+#color palette for difficulty scale
+text_color="#555555"
+pal_strive<-c('#50C4AA', '#B6C95C', '#FACB3E', '#FC800F', '#FF4759')
+
+# Nivel 13 a 17 ------------------------------------------------------------
+
+#Create Reactable
+table<-reactable(
+  data,
+  theme =  default(),
+
+  defaultColDef = colDef(vAlign="center", align="center", headerVAlign="center"),
+  columns = list(
+    `Órgão Superior` = colDef(name="Órgão Superior",
+                              align="center", vAlign="center", width=220,
+                              # resizable = TRUE,sortable = TRUE,
+                              # filterable = TRUE,
+                              cell = function(value) {
+                                tagList(
+                                  div(style = "display: inline-block;vertical-align:middle;width:50px"),
+                                  div(style = "display: inline-block;vertical-align:middle;", value)
+                                )
+                              }
+    ),
+    Órgão = colDef(name="", maxWidth=130, align="left"),
+    rank = colDef(name="", style=list(fontSize=13), maxWidth=50, align="right"),
+    `Nível 13 a 17`= colDef(name="Nº de Pessoas Negras", minWidth=50),
+    Total_serv_13a17 = colDef(name="Nº de Cargos/Funções", minWidth=50),
+    `% Nível 13 a 17` =colDef(name="%", minWidth=120,
+                              cell=data_bars(data,
+                                             bar_height=8,
+                                             text_size=11,
+                                             text_color="rgb(51, 51, 51)",
+                                             text_position = "outside-end",
+                                             background = "transparent",
+                                             round_edges = TRUE,
+                                             fill_color=c("#FFBC51",'#FF3A3A'),
+                                             fill_gradient = TRUE)),
+    tendencia_13a17 = colDef(name="Tendência % Últimos 5 meses",  maxWidth=140,
+                             footer="% Últimos 5 meses",
+                             cell=react_sparkline(data, labels=c("first","last"),
+                                                  label_size = "0.75em",
+                                                  tooltip_size = "1.1em",
+                                                  decimals = 1,
+                                                  tooltip_type=1,
+                                                  line_color = "rgb(51, 51, 51)")
+    )
+  ),
+  #Sub-Table
+  details = function(index){
+    new = subdata[subdata$`Órgão Superior` == data$`Órgão Superior`[index],]
+    reactable(data=new,
+              defaultColDef = colDef(vAlign="center", align="center", headerVAlign="center"),
+              theme =  default(),
+              columns = list(
+                `Órgão Superior`=colDef(show=FALSE),
+                rank = colDef(name="Posição por Órgão", width=295),
+                Órgão = colDef(name="Órgão", maxWidth=130, align="left", footer="", footerStyle=list(color='black')), #
+                rank = colDef(name="", style=list(fontSize=13), maxWidth=50, align="right"),
+                `Nível 13 a 17`= colDef(name="Nº de Pessoas Negras", minWidth=50),
+                Total_serv_13a17 = colDef(name="Nº de Cargos/Funções", minWidth=50),
+                `% Nível 13 a 17` = colDef(name="", minWidth=120,
+                                           cell=data_bars(new,
+                                                          bar_height=8,
+                                                          text_size=11,
+                                                          text_color="rgb(51, 51, 51)",
+                                                          text_position = "outside-end",
+                                                          background = "transparent",
+                                                          round_edges = TRUE,
+                                                          fill_color=c("#FFBC51",'#FF3A3A'),
+                                                          fill_gradient = TRUE)),
+                tendencia_13a17 = colDef(name="",  maxWidth=140,
+                                         cell=react_sparkline(new, labels=c("first","last"),
+                                                              label_size = "0.75em",
+                                                              decimals = 1,
+                                                              line_color = "rgb(51, 51, 51)")
+                )
+              )
+    )
+  }
+)%>%
+  google_font(font_family="Roboto", font_weight = 300)
+
+
+#use html widgest to prepend an dappend header and footer
+html_object_13a17<-table|>
+  prependContent(
+    tagList(
+      div(style = "vertical-align:middle;text-align:center;background-color:#1351B4;color:white;padding-top:25px;padding-bottom:4px;font-size:24px;",
+          "Percentual de Pessoas Negras (Pretas/Pardas) em Cargos Comissionados de Níveis de 13 a 17"),
+      div(style = "vertical-align:middle;text-align:center;background-color:#1351B4;color:#BBBBBB;padding-top:5px;padding-bottom:20px;font-size:14px;",
+          "Decreto nº 11.443/2023 que reserva às pessoas negras (pretas e pardas) percentual mínimo de 30% na ocupação em Cargos Comissionados Executivos (CCE) e Funções Comissionadas Executivas (FCE)")
+    )
+  )|>
+  appendContent(
+    p("Fonte: Painel Estatístico de Pessoal",
+      style = paste0(
+        "font-family:","Roboto; sans;",
+        "font-size: 12px;" ,
+        "text-align:right"))
+  )
+
+html_object_13a17
+#saveWidget(html_object_13a17, "nivel13a17.html", selfcontained = TRUE)
+```
+
+```{r chuck pizza_nivel_1a12, fig.height=12, fig.width=12}
+
+# gerar para a tela inicial
+
+# Gere o html_object e salve o Viewer como index.html na pasta observatório
+#html_object <- bscols(
+       # ranking_1_a_12,
+       # ranking_13_a_17,
+       # filtro_Orgao_pizza,
+       # figpier_Nivel1a12,
+       # figpier_Nivel13a17,
+       # widths = c(
+       #   #6,6,
+       #   12, 6,6),
+       # device = "sm")
+
+# bscols(filtro_Orgao_pizza, widths = 6)
+
+# salvar html_object como index.html
+
+
+# library(htmltools)
+# 
+# save_html(html_object, file = "../observatorio/index.html")
+
+```
+
+<!-- Nível correspondente de Cargo Comissionado Executivo -- CCE ou de Função Comissionada Executiva - FCE - Anexo III do Decreto nº10.829, de 5 de outubro de 2021 -->
+
+<!-- | Nível do cargo em Comissão, da Função de Confiança ou da Função Gratificada  | Nível correspondente de Cargo Comissionado Executivo -- CCE ou de Função Comissionada Executiva - FCE  | -->
+
+<!-- |-------------------------------|-----------------------------------------| -->
+
+<!-- | DAS/FCPE - 3                                                                 | Nível 10 a 12                                                                                          | -->
+
+<!-- | DAS/FCPE - 2                                                                 | Nível 7 a 9                                                                                            | -->
+
+<!-- | DAS/FCPE - 1                                                                 | Nível 5 e 6                                                                                            | -->
+
+<!-- | FG -- 1                                                                      | Nível 3 e 4                                                                                            | -->
+
+<!-- | FG -- 2                                                                      | Nível 2                                                                                                | -->
+
+<!-- | FG - 3                                                                       | Nível 1                                                                                                | -->
+
+```{r tabela13a17}
+# bscols(html_object_13a17,
+#        widths = 12,
+#        device = "sm")
+```
+
+<!-- Correspondente de Cargo Comissionado Executivo -- CCE ou de Função Comissionada Executiva - FCE - Anexo III do Decreto nº10.829, de 5 de outubro de 2021 -->
+
+<!-- | Nível do cargo em Comissão, da Função de Confiança ou da Função Gratificada  | Nível correspondente de Cargo Comissionado Executivo -- CCE ou de Função Comissionada Executiva - FCE  | -->
+
+<!-- |-------------------------------|-----------------------------------------| -->
+
+<!-- | DAS/FCPE - 6                                                                 | Nível 17                                                                                               | -->
+
+<!-- | DAS/FCPE - 5                                                                 | Nível 15 a16                                                                                           | -->
+
+<!-- | DAS/FCPE - 4                                                                 | Nível 13 a 14                                                                                          | -->
+
+```{js echo=FALSE, message=FALSE, warning=FALSE}
+
+// Obtém o elemento com ID "Orgao_PIZZA"
+const orgaoSelectize = document.getElementById("Orgao_PIZZA").getElementsByClassName("selectized")[0];
+
+// Verifica se o valor selecionado é igual a "all" (ou qualquer outro valor que você queira verificar)
+if (orgaoSelectize.value === "(All)" {
+  // Atribui um valor vazio ao Selectize e evita a atualização do valor selecionado
+  selectize.setValue("", false);
+}
+
+
+$(seletor).DataTable({
+      data: dt2, // array com dados
+      columns: colunas, // vetor com nome das colunas
+      language: {
+        url:"js/lib/pt_br.json"
+      }
+})
+```
+
+
+
+
+# **Indicador 2: Índice de suficiência de vagas para cumprimento da meta de cotas**
+
+
+
+
+*  Definição: Relação entre o total de cargos CCE/FCE disponíveis no órgão e o número de vagas que deveriam ser ocupadas por pessoas negras para cumprimento da meta.
+
+O indicador 2 é calculado apenas paras os órgãos que não atingiram a meta estabelecida no Decreto. O indicador é baseado no número de nomeações adicionais que seriam necessárias para cumprir a meta do decreto, sem alterar a distribuição atual de cargos. Em outras palavras, considerando $T$ a quantidade de vínculos em cargos comissionados  e $N$ o total destes que se autodeclaram negros, o total de cargos adicionais, $A$, necessários para cumprir a cota é definido de tal forma que $$100\times \frac{N + A}{T + A} \geq 30$$ Assim, temos $$A \geq \frac{0.3T - N}{1-0.3}$$
+
+Além das vagas necessárias, o indicador 2 leva em conta o total de cargos disponíveis  $D$, definido como a diferença entre o total de cargos distribuídos para o órgão e o total de ocupados.
+
+* Fórmula conceitual: $$Indicador 2 = \frac{D}{A}$$
+
+* Interpretação:
+
+    * $= 1$ → As vagas disponíveis são exatamente suficientes para atingir a meta
+    
+    * $< 1$ → As vagas disponíveis são insuficientes para atingir a meta
+    
+    * $> 1$ → As vagas disponíveis são mais do que suficientes para atingir a meta
+
+
+```{r prep_necessidade_vagas}
+
+## limite geral observado no indicador
+lim <- Tab_ind3[is.finite(`Indice de suficiencia de vagas`) & 
+                  `Indice de suficiencia de vagas` < 99,
+                max(`Indice de suficiencia de vagas`,na.rm = T)]
+
+# domínio da tbela necessidade de vagas
+dom_nece_1a12 <- Tab_ind3_1a12[,`Indice de suficiencia de vagas`]
+dom_nece_13a17 <- Tab_ind3_13a17[,`Indice de suficiencia de vagas`]
+
+
+# DATATABLE necessidade de vagas, 1 a 12
+dt3_1a12 <- sd_ind3_1a12  |> 
+  DT::datatable(#filter = "top",
+                #style = "bootstrap",
+                class = "compact",
+                width = "100%",
+                extensions = 'Buttons',
+                options = configuracao,
+                caption = 
+                  tags$caption(
+                    style = 
+                    "caption-side: top;
+                    text-align: left;
+                    font-size: 24px;
+                    color: #0000AA;",
+                    "Niveis 1 a 12"
+                    )
+                ) %>%
+  formatStyle(
+    'Indice de suficiencia de vagas',
+    background = styleEqual(dom_nece_1a12,color_fun(dom_nece_1a12,0,1,lim)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  )
+
+
+# DATATABLE necessidade de vagas, 1 a 12
+dt3_13a17 <- sd_ind3_13a17   |> 
+  DT::datatable(#filter = "top",
+                #style = "bootstrap",
+                class = "compact",
+                width = "100%",
+                extensions = 'Buttons',
+                options = configuracao,
+                caption = 
+                  tags$caption(
+                    style = 
+                    "caption-side: top;
+                    text-align: left;
+                    font-size: 24px;
+                    color: #0000AA;",
+                    "Niveis 13 a 17"
+                    )
+                ) %>%
+  formatStyle(
+    'Indice de suficiencia de vagas',
+    background = styleEqual(dom_nece_13a17,color_fun(dom_nece_13a17,0,1,lim)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  )
+```
+
+
+```{r tab_necesside_vagas}
+bscols(dt3_1a12,
+       dt3_13a17,
+       widths = c(6,6),
+       device = "sm")
+```
+
+
+# **Indicador 3: Índice de equidade de acesso a cargos FCE (raça e gênero) **
+
+* Hipótese analítica: na ausência de desigualdade racial no acesso a cargos de liderança, a proporção de negros em cargos FCE deveria ser equivalente à sua proporção entre os servidores efetivos ativos.
+
+* Definição: Razão entre o percentual de pessoas negras em cargos de liderança (FCE) e o percentual de pessoas negras no conjunto de servidores efetivos ativos.
+
+* Fórmula conceitual: 
+
+$$\frac{\text{% negros em cargos FCE}}{\text{% negros no quadro efetivo ativo}}$$
+
+Interpretação:
+
+* $= 1$ → Equidade na ocupação dos cargos
+
+* $< 1$ → Sub-representação de pessoas negras na liderança
+
+* $> 1$ → Sobre-representação
+
+
+## **Evolução anual do Índice de equidade de acesso a cargos FCE**
+
+```{r ind4_mes}
+
+gf_base <- Tab_ind4_mes %>%
+  filter(`Cor-origem etnica` %in%
+           c("BRANCA","PRETA","PARDA","Negras")) %>%
+  ggplot_cat(aes(x = `Mes/ano`,
+                 col = `Cor-origem etnica`)) + 
+  geom_hline(yintercept = 1,linetype = 2) + 
+  labs(x = "",col = "",y = "")
+  
+gf1 <- gf_base + 
+  geom_line(aes(y = `Razao equidade, niveis 1 a 12`)) + 
+  geom_point(aes(y = `Razao equidade, niveis 1 a 12`),size = 2.2) +
+  labs(title = "Níveis 1 a 12")
+
+
+gf2 <- gf_base + 
+  geom_line(aes(y = `Razao equidade, niveis 13 a 17`)) + 
+  geom_point(aes(y = `Razao equidade, niveis 13 a 17`),size = 2.2) +
+  labs(title = "Níveis 13 a 17")
+
+
+bscols(ggplotly_c(gf1),
+       ggplotly_c(gf2),
+       widths = c(6,6),
+       device = "sm")
+```
+
+
+## **Índice de equidade de acesso a cargos por órgão **
+
+```{r prep_ind4}
+# tbela necessidade de vagas
+lim1 <- Tab_ind4_orgaos[is.finite(`Razao equidade, niveis 1 a 12`),
+                        max(abs(`Razao equidade, niveis 1 a 12` - 1),na.rm = T)]
+
+lim2 <- Tab_ind4_orgaos[is.finite(`Razao equidade, niveis 13 a 17`),
+                        max(abs(`Razao equidade, niveis 13 a 17` - 1),na.rm = T)]
+
+lim <- max(lim1,lim2)
+
+pal <- col_numeric(
+  palette = c(pal_primaria['ponto'],"white",pal_primaria["principal"]),
+  domain = c(1 - lim, 1 + lim)
+)
+
+dom_ind4_12 <- Tab_ind4_orgaos[,`Razao equidade, niveis 1 a 12`]
+dom_ind4_17 <- Tab_ind4_orgaos[,`Razao equidade, niveis 13 a 17`]
+
+dt4 <- sd_ind4 |> 
+  DT::datatable(#filter = "top",
+                #style = "bootstrap",
+                class = "compact",
+                width = "100%",
+                extensions = 'Buttons',
+                options = configuracao
+                ) %>%
+  formatStyle(
+    'Razao equidade, niveis 1 a 12',
+    background = styleEqual(dom_ind4_12,pal(dom_ind4_12)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Razao equidade, niveis 13 a 17',
+    background = styleEqual(dom_ind4_17,pal(dom_ind4_17)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  )
+  
+# Sys.setlocale("LC_TIME", "pt_BR.ISO8859-1")
+```
+
+
+```{r tab_equidade}
+bscols(dt4,
+       widths = 12,
+       device = "sm")
+```
+
+
+#  **Indicador 4 (em revisão): Índice de equidade remuneratória por raça/cor**
+
+* Definição: Razão entre a remuneração média de negros e a remuneração média de brancos nos cargos de liderança (CCE/FCE).
+
+* Fórmula conceitual: $$\frac{\text{Remuneração média (negros) }}{\text{Remuneração média (brancos)}}$$
+Interpretação:
+
+* $=1$ → Equidade remuneratória;
+
+* $< 1$ → Pessoas negras recebem, em média, menos que pessoas brancas
+
+* $> 1$ → Pessoas negras recebem, em média, mais que pessoas brancas
+
+
+```{r ind5_mes}
+
+gf_medias <- Tab_ind5_mes  %>%
+  ggplot_cat(aes(x = `Mes/ano`,
+                 y = `Salario medio`,
+                 col = `Cor-origem etnica`)) + 
+  # geom_hline(yintercept = 1,linetype = 2) + 
+  geom_line() + 
+  geom_point(size = 2.2) + 
+  labs(x = "",col = "",y = "",title = "Remuneração média por mês")
+  
+gf_ind <- Tab_ind5_mes  %>%
+  # filter(`Cor-origem etnica` != "Branca") %>%
+  ggplot_cat(aes(x = `Mes/ano`,
+                 y = `Equidade remuneratoria`,
+                 col = `Cor-origem etnica`)) + 
+  geom_hline(yintercept = 1,linetype = 2) +
+  geom_line() + 
+  geom_point(size = 2.2) + 
+  labs(x = "",col = "",y = "",title = "Índice de equidade remuneratória por mês")
+
+
+# 
+# bscols(ggplotly_c(gf_medias),
+#        ggplotly_c(gf_ind),
+#        widths = c(6,6),
+#        device = "sm") 
+```
+
+
+
+
+```{r prep_ind5}
+setDT(Tab_ind5_orgaos)
+
+# tbela necessidade de vagas
+lim1 <- Tab_ind5_orgaos[is.finite(`Equidade remuneratoria, pessoas Pardas`),
+                        max(abs(`Equidade remuneratoria, pessoas Pardas` - 1),na.rm = T)]
+
+lim2 <- Tab_ind5_orgaos[is.finite(`Equidade remuneratoria, pessoas Pretas`),
+                        max(abs(`Equidade remuneratoria, pessoas Pretas` - 1),na.rm = T)]
+
+
+lim3 <- Tab_ind5_orgaos[is.finite(`Equidade remuneratoria, pessoas Negras`),
+                        max(abs(`Equidade remuneratoria, pessoas Negras` - 1),na.rm = T)]
+
+pal_1 <- col_numeric(
+  palette = c(pal_primaria['ponto'],"white",pal_primaria["principal"]),
+  domain = c(1 - lim1, 1 + lim1)
+)
+
+pal_2 <- col_numeric(
+  palette = c(pal_primaria['ponto'],"white",pal_primaria["principal"]),
+  domain = c(1 - lim2, 1 + lim2)
+)
+
+
+pal_3 <- col_numeric(
+  palette = c(pal_primaria['ponto'],"white",pal_primaria["principal"]),
+  domain = c(1 - lim3, 1 + lim3)
+)
+
+
+dom_ind5_pardas <- Tab_ind5_orgaos[,`Equidade remuneratoria, pessoas Pardas`]
+dom_ind5_pretas <- Tab_ind5_orgaos[,`Equidade remuneratoria, pessoas Pretas`]
+dom_ind5_negras <- Tab_ind5_orgaos[,`Equidade remuneratoria, pessoas Negras`]
+
+dt5 <- sd_ind5 |> 
+  DT::datatable(#filter = "top",
+                #style = "bootstrap",
+                class = "compact",
+                width = "100%",
+                extensions = 'Buttons',
+                options = configuracao,
+                caption = 
+                  tags$caption(
+                    style = 
+                    "caption-side: top;
+                    text-align: left;
+                    font-size: 24px;
+                    color: #0000AA;",
+                    "Índice de equidade remuneratória por órgão vinculado"
+                    )
+                ) %>%
+  formatStyle(
+    'Equidade remuneratoria, pessoas Pardas',
+    background = styleEqual(dom_ind5_pardas,pal_1(dom_ind5_pardas)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  ) %>%
+  formatStyle(
+    'Equidade remuneratoria, pessoas Pretas',
+    background = styleEqual(dom_ind5_pretas,pal_2(dom_ind5_pretas)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  )%>%
+  formatStyle(
+    'Equidade remuneratoria, pessoas Negras',
+    background = styleEqual(dom_ind5_negras,pal_3(dom_ind5_negras)),
+    backgroundSize = '98% 88%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'center'
+  )
+  
+# Sys.setlocale("LC_TIME", "pt_BR.ISO8859-1")
+```
+
+
+```{r tab_equidade_sal}
+# bscols(dt5,
+#        widths = 12,
+#        device = "sm")
+
+Tab_ind5_niveis %>%
+  .[,`Percentual de CCEs` := round(100*total/sum(total),1),
+  .(nome_cor_origem_etnica,
+    nivel_cce_fce)] %>%
+  setnames(c("nivel_cce_fce","nome_cor_origem_etnica"),
+           c("Nivel funcao","Cor/origem etnica")) %>% 
+  filter(funcao == 'CCE') %>% #View
+  ggplot_cat(aes(x = `Nivel funcao`,
+                 y = `Percentual de CCEs`,
+                 fill = `Cor/origem etnica`
+                 )) +
+  geom_col(position = 'dodge')  +
+  # geom_text(aes(label = paste0(round(p_cce,1),"%"),
+  #               col = nome_cor_origem_etnica),
+  #           position = position_dodge(width = 0.9),
+  #           hjust = 0.7,
+  #           vjust = -0.9,
+  #           show.legend = F
+  #           ) +
+  scale_x_continuous(breaks = 1:17,labels = 1:17) +
+  labs(x = "Nível CCE/FCE",
+       y = "Percentual de CCEs",
+       fill = "",
+       itle = "Percentual de CCEs dentre os vínculos com função")  -> plot_cce_nivel_etna
+
+bscols(ggplotly_c(gf_ind),
+       dt5,
+       widths = c(6,6),
+       device = "sm")
+
+bscols(ggplotly_c(gf_medias),
+       ggplotly_c(plot_cce_nivel_etna) %>%
+         plotly::layout(legend = list(x = 0.50,
+                                      y = 0,
+                                      xanchor = "center",
+                                      yanchor = "upper",
+                                      orientation = "h")
+                        ),
+       widths = c(6,6),
+       device = "sm")
+
+# bscols(dt5,
+#        plot_ind4,
+#        widths = c(6,6),
+#        device = "sm")
+```

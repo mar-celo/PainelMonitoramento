@@ -1,0 +1,10 @@
+name: painelmonitoramento
+title:
+username: marcelo-rodrigues-ribeiro
+account: marcelo-rodrigues-ribeiro
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17441250
+bundleId:
+url: https://marcelo-rodrigues-ribeiro.shinyapps.io/painelmonitoramento/
+version: 1

@@ -5,5 +5,6 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
-  # Your application server logic
+  mod_indigenas_server("indigenas")
+  mod_etnia_lideranca_server("etnia")
 }

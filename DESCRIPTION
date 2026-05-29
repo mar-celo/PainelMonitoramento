@@ -8,10 +8,26 @@ Authors@R:
            email = "marcelo.ribeiro@gestao.gov.br")
 Description: What the package does (one paragraph).
 License: MIT + file LICENSE
-Imports: 
+Imports:
+    bslib,
     config,
+    dplyr,
+    DT,
+    echarts4r,
+    forcats,
+    ggplot2,
     golem,
-    shiny
+    here,
+    htmltools,
+    lubridate,
+    pkgload,
+    plotly,
+    reactable,
+    sf,
+    shiny,
+    stats,
+    stringr,
+    tidyr
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
