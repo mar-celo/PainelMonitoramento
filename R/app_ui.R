@@ -36,18 +36,19 @@ app_ui <- function(request) {
         mod_capa_ui("capa")
       ),
 
-      # ---- Módulo Indígenas ----
-      bslib::nav_panel(
-        title = shiny::tagList(shiny::icon("feather-alt"), " Indígenas na APF"),
-        value = "indigenas",
-        mod_indigenas_ui("indigenas")
-      ),
-
-      # ---- Módulo Raça e Liderança ----
-      bslib::nav_panel(
-        title = shiny::tagList(shiny::icon("users"), " Raça e Liderança"),
-        value = "etnia",
-        mod_etnia_lideranca_ui("etnia")
+      # ---- Menu Monitoramento ----
+      bslib::nav_menu(
+        title = shiny::tagList(shiny::icon("chart-bar"), " Monitoramento"),
+        bslib::nav_panel(
+          title = shiny::tagList(shiny::icon("feather-alt"), " Indígenas na APF"),
+          value = "indigenas",
+          mod_indigenas_ui("indigenas")
+        ),
+        bslib::nav_panel(
+          title = shiny::tagList(shiny::icon("users"), " Raça e Liderança"),
+          value = "etnia",
+          mod_etnia_lideranca_ui("etnia")
+        )
       ),
 
       # ---- Sobre ----
