@@ -41,7 +41,7 @@ mod_indigenas_ui <- function(id) {
             shiny::icon("table"),
             " Distribuição Étnica no Serviço Público Federal"
           ),
-          bslib::card_body(reactable::reactableOutput(ns("tabela_etnia")))
+          bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tabela_etnia"))))
         ),
         shiny::uiOutput(ns("analise_representatividade"))
       ),
@@ -68,7 +68,7 @@ mod_indigenas_ui <- function(id) {
               class = "bg-primary text-white",
               "Evolução de Servidores Indígenas na APF (2016 – 2026)"
             ),
-            bslib::card_body(plotly::plotlyOutput(ns("serie_historica"), height = "420px"))
+            bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_historica"), height = "420px")))
           )
         )
       ),
@@ -82,11 +82,7 @@ mod_indigenas_ui <- function(id) {
             title = shiny::strong("Filtros"),
             bg    = "#f0f4fa",
             width = 220,
-            shiny::selectInput(
-              ns("mes_ref_efet"), "Mês de referência:",
-              choices  = NULL,
-              selected = NULL
-            ),
+            shiny::uiOutput(ns("mes_ref_efet_ui")),
             shiny::hr(),
             shiny::p(class = "text-muted small",
                      "Gráficos de barras mostram o mês selecionado.",
@@ -99,14 +95,14 @@ mod_indigenas_ui <- function(id) {
                 class = "bg-primary text-white",
                 "Incidência de Vínculos Efetivos por Sexo e Raça/Cor"
               ),
-              bslib::card_body(plotly::plotlyOutput(ns("efetivos_sexo"), height = "340px"))
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("efetivos_sexo"), height = "340px")))
             ),
             bslib::card(
               bslib::card_header(
                 class = "bg-primary text-white",
                 "Vínculos com Função de Liderança por Sexo e Raça/Cor"
               ),
-              bslib::card_body(plotly::plotlyOutput(ns("funcao_sexo"), height = "340px"))
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("funcao_sexo"), height = "340px")))
             )
           ),
           bslib::layout_columns(
@@ -116,14 +112,14 @@ mod_indigenas_ui <- function(id) {
                 class = "bg-primary text-white",
                 "Série: % de Vínculos Efetivos – Indígenas vs Demais"
               ),
-              bslib::card_body(plotly::plotlyOutput(ns("serie_efetivos"), height = "300px"))
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_efetivos"), height = "300px")))
             ),
             bslib::card(
               bslib::card_header(
                 class = "bg-primary text-white",
                 "Série: % de Vínculos com Função – Indígenas vs Demais"
               ),
-              bslib::card_body(plotly::plotlyOutput(ns("serie_funcao"), height = "300px"))
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_funcao"), height = "300px")))
             )
           )
         )
@@ -138,11 +134,7 @@ mod_indigenas_ui <- function(id) {
             title = shiny::strong("Filtros"),
             bg    = "#f0f4fa",
             width = 220,
-            shiny::selectInput(
-              ns("mes_ref_func"), "Mês de referência:",
-              choices  = NULL,
-              selected = NULL
-            ),
+            shiny::uiOutput(ns("mes_ref_func_ui")),
             shiny::radioButtons(
               ns("tipo_viz_func"), "Pirâmide – Visualizar:",
               choices  = c("Quantitativo absoluto" = "abs",
@@ -163,14 +155,14 @@ mod_indigenas_ui <- function(id) {
                 class = "bg-primary text-white",
                 "Ocupação de Cargos CCE/FCE por Nível e Gênero"
               ),
-              bslib::card_body(plotly::plotlyOutput(ns("piramide_cce"), height = "360px"))
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("piramide_cce"), height = "360px")))
             ),
             bslib::card(
               bslib::card_header(
                 class = "bg-primary text-white",
                 "Evolução de Cargos CCE/FCE por Nível (a partir de 2022)"
               ),
-              bslib::card_body(plotly::plotlyOutput(ns("serie_niveis"), height = "360px"))
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_niveis"), height = "360px")))
             )
           ),
           bslib::card(
@@ -178,7 +170,7 @@ mod_indigenas_ui <- function(id) {
               class = "bg-primary text-white",
               "Razão de Equidade nos Cargos CCE/FCE – Indígenas vs Total (por Sexo)"
             ),
-            bslib::card_body(plotly::plotlyOutput(ns("razao_equiv"), height = "340px"))
+            bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equiv"), height = "340px")))
           )
         )
       ),
@@ -197,11 +189,7 @@ mod_indigenas_ui <- function(id) {
               min = 5, max = 50, value = 20, step = 5
             ),
             shiny::hr(),
-            shiny::selectInput(
-              ns("ano_orgao"), "Ano de referência (órgãos):",
-              choices  = NULL,
-              selected = NULL
-            )
+            shiny::uiOutput(ns("ano_orgao_ui"))
           ),
 
           # Linha 1: Mapa + Tabela de órgãos
@@ -216,11 +204,11 @@ mod_indigenas_ui <- function(id) {
                 bslib::navset_pill(
                   bslib::nav_panel(
                     "Mapa",
-                    shiny::plotOutput(ns("mapa_uf"), height = "420px")
+                    .spin(shiny::plotOutput(ns("mapa_uf"), height = "420px"))
                   ),
                   bslib::nav_panel(
                     "Barras por UF",
-                    plotly::plotlyOutput(ns("plot_uf"), height = "420px")
+                    .spin(plotly::plotlyOutput(ns("plot_uf"), height = "420px"))
                   )
                 )
               )
@@ -230,7 +218,7 @@ mod_indigenas_ui <- function(id) {
                 class = "bg-primary text-white",
                 shiny::icon("building"), " Representatividade por Órgão"
               ),
-              bslib::card_body(DT::DTOutput(ns("tab_orgaos")))
+              bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_orgaos"))))
             )
           ),
 
@@ -241,7 +229,7 @@ mod_indigenas_ui <- function(id) {
               shiny::icon("chart-bar"),
               " Natureza Jurídica dos Órgãos de Indígenas ao Longo do Tempo (%)"
             ),
-            bslib::card_body(echarts4r::echarts4rOutput(ns("natjur_echart"), height = "340px"))
+            bslib::card_body(.spin(echarts4r::echarts4rOutput(ns("natjur_echart"), height = "340px")))
           )
         )
       ),
@@ -257,14 +245,14 @@ mod_indigenas_ui <- function(id) {
               class = "bg-primary text-white",
               "Pirâmide Etária – Servidores Indígenas"
             ),
-            bslib::card_body(plotly::plotlyOutput(ns("piramide_ind"), height = "400px"))
+            bslib::card_body(.spin(plotly::plotlyOutput(ns("piramide_ind"), height = "400px")))
           ),
           bslib::card(
             bslib::card_header(
               class = "bg-primary text-white",
               "Pirâmide Etária – APF (Todos os Servidores)"
             ),
-            bslib::card_body(plotly::plotlyOutput(ns("piramide_apf"), height = "400px"))
+            bslib::card_body(.spin(plotly::plotlyOutput(ns("piramide_apf"), height = "400px")))
           )
         ),
         bslib::layout_columns(
@@ -274,7 +262,7 @@ mod_indigenas_ui <- function(id) {
               class = "bg-primary text-white",
               "Escolaridade dos Servidores Indígenas (Treemap)"
             ),
-            bslib::card_body(plotly::plotlyOutput(ns("treemap_escol"), height = "400px"))
+            bslib::card_body(.spin(plotly::plotlyOutput(ns("treemap_escol"), height = "400px")))
           ),
           bslib::card(
             bslib::card_header(
@@ -285,11 +273,11 @@ mod_indigenas_ui <- function(id) {
               bslib::navset_pill(
                 bslib::nav_panel(
                   "Ingressos por Ano",
-                  plotly::plotlyOutput(ns("serie_ingressos"), height = "340px")
+                  .spin(plotly::plotlyOutput(ns("serie_ingressos"), height = "340px"))
                 ),
                 bslib::nav_panel(
                   "Por Tipo de Cota",
-                  plotly::plotlyOutput(ns("serie_cotas"), height = "340px")
+                  .spin(plotly::plotlyOutput(ns("serie_cotas"), height = "340px"))
                 )
               )
             )
@@ -343,13 +331,29 @@ mod_indigenas_server <- function(id) {
     )
     anos_orgao <- sort(unique(df_orgao_raw$ano), decreasing = TRUE)
 
-    # Popular selectInputs dinâmicos
-    shiny::updateSelectInput(session, "mes_ref_efet",
-                             choices = meses_label, selected = meses_label[1])
-    shiny::updateSelectInput(session, "mes_ref_func",
-                             choices = meses_label, selected = meses_label[1])
-    shiny::updateSelectInput(session, "ano_orgao",
-                             choices = anos_orgao, selected = anos_orgao[1])
+    # Renderizar os selectInputs com choices já preenchidas (evita choices = NULL
+    # + updateSelectInput, padrão que falha em algumas versões do bslib/shinyapps)
+    output$mes_ref_efet_ui <- shiny::renderUI({
+      shiny::selectInput(
+        ns("mes_ref_efet"), "Mês de referência:",
+        choices  = meses_label,
+        selected = meses_label[1]
+      )
+    })
+    output$mes_ref_func_ui <- shiny::renderUI({
+      shiny::selectInput(
+        ns("mes_ref_func"), "Mês de referência:",
+        choices  = meses_label,
+        selected = meses_label[1]
+      )
+    })
+    output$ano_orgao_ui <- shiny::renderUI({
+      shiny::selectInput(
+        ns("ano_orgao"), "Ano de referência (órgãos):",
+        choices  = anos_orgao,
+        selected = anos_orgao[1]
+      )
+    })
 
     # ---- Dados do panorama atual ----
     etnia_atual <- df_etnia |>
@@ -378,7 +382,7 @@ mod_indigenas_server <- function(id) {
         col_widths = c(3, 3, 3, 3),
         bslib::value_box(
           title    = "Servidores Indígenas (APF)",
-          value    = format(n_ind, big.mark = ".", scientific = FALSE),
+          value    = format(n_ind, big.mark = ".", decimal.mark = ",", scientific = FALSE),
           showcase = shiny::icon("user"),
           theme    = "primary",
           shiny::p(label_mes, style = "font-size:.83rem;")
@@ -394,7 +398,7 @@ mod_indigenas_server <- function(id) {
           title    = "Var. Anual (vínculos)",
           value    = if (!is.na(delta_n))
             paste0(ifelse(delta_n >= 0, "+", ""),
-                   format(delta_n, big.mark = ".", scientific = FALSE))
+                   format(delta_n, big.mark = ".", decimal.mark = ",", scientific = FALSE))
           else "–",
           showcase = shiny::icon(if (!is.na(delta_n) && delta_n >= 0) "arrow-up" else "arrow-down"),
           theme    = if (!is.na(delta_n) && delta_n >= 0) "success" else "danger",
@@ -402,7 +406,7 @@ mod_indigenas_server <- function(id) {
         ),
         bslib::value_box(
           title    = "Pico Histórico",
-          value    = paste0(format(pico_n, big.mark = "."), " (", pico_ano, ")"),
+          value    = paste0(format(pico_n, big.mark = ".", decimal.mark = ","), " (", pico_ano, ")"),
           showcase = shiny::icon("trophy"),
           theme    = bslib::value_box_theme(bg = "#6c757d", fg = "#fff"),
           shiny::p("maior total já registrado na série", style = "font-size:.83rem;")
@@ -410,66 +414,59 @@ mod_indigenas_server <- function(id) {
       )
     })
 
-    output$tabela_etnia <- reactable::renderReactable({
+    output$tabela_etnia <- DT::renderDT({
       df <- etnia_atual |>
-        dplyr::mutate(pct_show = round(pct * 100, 2))
+        dplyr::mutate(pct_show = round(pct * 100, 2)) |>
+        dplyr::arrange(dplyr::desc(pct_show))
 
-      reactable::reactable(
-        df |> dplyr::select(nome_cor_origem_etnica, n, pct_show),
-        sortable     = TRUE,
-        highlight    = TRUE,
-        striped      = TRUE,
-        compact      = TRUE,
-        defaultSorted    = "pct_show",
-        defaultSortOrder = "desc",
-        theme = reactable::reactableTheme(
-          borderColor    = "#dfe2e5",
-          stripedColor   = "#f0f4fa",
-          highlightColor = "#e8f0fb",
-          cellPadding    = "10px 14px"
+      ind_rows <- which(grepl("IND[ÍI]GENA|INDIGENA",
+                              df$nome_cor_origem_etnica, ignore.case = TRUE))
+
+      DT::datatable(
+        df |> dplyr::select(
+          `Cor/Origem Étnica` = nome_cor_origem_etnica,
+          `Total de Vínculos` = n,
+          `Participação (%)`  = pct_show
         ),
-        columns = list(
-          nome_cor_origem_etnica = reactable::colDef(
-            name    = "Cor/Origem Étnica",
-            minWidth = 150,
-            style   = function(value) {
-              if (grepl("IND[ÍI]GENA|INDIGENA", value, ignore.case = TRUE))
-                list(fontWeight = "bold", color = "#fff",
-                     backgroundColor = "#FF7800", borderRadius = "4px")
-              else list(color = "#212529")
-            }
-          ),
-          n = reactable::colDef(
-            name   = "Total de Vínculos",
-            align  = "right",
-            format = reactable::colFormat(separators = TRUE, locales = "pt-BR")
-          ),
-          pct_show = reactable::colDef(
-            name = "Participação (%)",
-            defaultSortOrder = "desc",
-            cell = function(value, index) {
-              is_ind <- grepl("IND[ÍI]GENA|INDIGENA",
-                              df$nome_cor_origem_etnica[index],
-                              ignore.case = TRUE)
-              cor <- if (is_ind) "#FF7800" else "#004587"
-              w   <- paste0(min(value, 100), "%")
-              htmltools::div(
-                style = "display:flex; align-items:center; gap:8px;",
-                htmltools::span(style = "min-width:48px; text-align:right;",
-                                paste0(value, "%")),
-                htmltools::div(style = paste0(
-                  "background:", cor, "; width:", w,
-                  "; height:10px; border-radius:3px; flex:1;"
-                ))
-              )
-            }
+        rownames = FALSE,
+        class    = "compact stripe hover",
+        options  = list(
+          pageLength = 15,
+          order      = list(list(2L, "desc")),
+          dom        = "t",
+          language   = list(
+            search   = "Pesquisar:",
+            info     = "Exibindo _START_–_END_ de _TOTAL_ etnias",
+            paginate = list(`next` = "Próximo", previous = "Anterior")
           )
         )
-      )
+      ) |>
+        DT::formatCurrency("Total de Vínculos",
+                           currency = "", mark = ".", digits = 0) |>
+        DT::formatStyle(
+          "Participação (%)",
+          background         = DT::styleColorBar(c(0, max(df$pct_show)), "#1351b4"),
+          backgroundSize     = "98% 50%",
+          backgroundRepeat   = "no-repeat",
+          backgroundPosition = "center"
+        ) |>
+        DT::formatStyle(
+          columns    = "Cor/Origem Étnica",
+          valueColumns = "Cor/Origem Étnica",
+          fontWeight = DT::styleEqual(
+            df$nome_cor_origem_etnica[ind_rows], "bold"
+          ),
+          color = DT::styleEqual(
+            df$nome_cor_origem_etnica[ind_rows], "#ffffff"
+          ),
+          backgroundColor = DT::styleEqual(
+            df$nome_cor_origem_etnica[ind_rows], "#FF7800"
+          )
+        )
     })
 
     output$analise_representatividade <- shiny::renderUI({
-      n_fmt   <- format(n_ind, big.mark = ".", scientific = FALSE)
+      n_fmt   <- format(n_ind, big.mark = ".", decimal.mark = ",", scientific = FALSE)
       pct_fmt <- gsub("\\.", ",", format(round(pct_ind, 3), nsmall = 3))
 
       tags$div(
@@ -1072,7 +1069,7 @@ mod_indigenas_server <- function(id) {
       df_plot <- df_mapa |>
         dplyr::mutate(
           label = ifelse(total_indigenas > 0,
-                         format(total_indigenas, big.mark = ".", scientific = FALSE),
+                         format(total_indigenas, big.mark = ".", decimal.mark = ",", scientific = FALSE),
                          "")
         )
 
@@ -1085,7 +1082,7 @@ mod_indigenas_server <- function(id) {
           low    = "#d0e4f7",
           high   = "#004587",
           name   = "Vínculos\nIndígenas",
-          labels = function(x) format(x, big.mark = ".", scientific = FALSE)
+          labels = function(x) format(x, big.mark = ".", decimal.mark = ",", scientific = FALSE)
         ) +
         ggplot2::geom_sf_text(
           ggplot2::aes(label = label),

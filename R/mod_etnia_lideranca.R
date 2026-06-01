@@ -27,7 +27,7 @@ mod_etnia_lideranca_ui <- function(id) {
             shiny::icon("chart-line"),
             " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
           ),
-          bslib::card_body(plotly::plotlyOutput(ns("serie_mensal"), height = "380px"))
+          bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
         )
       ),
 
@@ -45,14 +45,14 @@ mod_etnia_lideranca_ui <- function(id) {
               class = "bg-primary text-white",
               shiny::icon("sitemap"), " Por Órgão Superior"
             ),
-            bslib::card_body(DT::DTOutput(ns("tab_superior")))
+            bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_superior"))))
           ),
           bslib::card(
             bslib::card_header(
               class = "bg-primary text-white",
               shiny::icon("building"), " Por Órgão Vinculado"
             ),
-            bslib::card_body(DT::DTOutput(ns("tab_vinculado")))
+            bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_vinculado"))))
           )
         )
       ),
@@ -71,14 +71,14 @@ mod_etnia_lideranca_ui <- function(id) {
               class = "bg-primary text-white",
               "Índice de Suficiência – Nível 1 a 12"
             ),
-            bslib::card_body(DT::DTOutput(ns("suf_1a12")))
+            bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("suf_1a12"))))
           ),
           bslib::card(
             bslib::card_header(
               class = "bg-primary text-white",
               "Índice de Suficiência – Nível 13 a 17"
             ),
-            bslib::card_body(DT::DTOutput(ns("suf_13a17")))
+            bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("suf_13a17"))))
           )
         )
       ),
@@ -96,7 +96,7 @@ mod_etnia_lideranca_ui <- function(id) {
             shiny::icon("chart-bar"),
             " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
           ),
-          bslib::card_body(plotly::plotlyOutput(ns("razao_equidade"), height = "420px"))
+          bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
         )
       )
     )

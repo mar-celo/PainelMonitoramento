@@ -25,6 +25,7 @@ Imports:
     reactable,
     sf,
     shiny,
+    shinycssloaders,
     stats,
     stringr,
     tidyr
