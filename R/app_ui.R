@@ -116,108 +116,286 @@ golem_add_external_resources <- function() {
     ),
     shiny::tags$style(shiny::HTML("
 
-      /* ── Easing curves ──────────────────────────────────────── */
+      /* ── Design tokens ──────────────────────────────────────── */
       :root {
-        --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
-        --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+        --c-brand:        #004587;
+        --c-brand-mid:    #1351b4;
+        --c-accent:       #FF7800;
+        --c-surface-0:    #eef1f6;
+        --c-surface-1:    #ffffff;
+        --c-surface-2:    #f5f7fb;
+        --c-border:       rgba(0,69,135,.14);
+        --c-border-sub:   rgba(0,0,0,.13);
+        --c-ink-1:        #18202e;
+        --c-ink-2:        #495057;
+        --c-ink-3:        #868e96;
+        --shadow-sm:      0 2px 6px rgba(0,0,0,.09), 0 1px 2px rgba(0,0,0,.06);
+        --shadow-md:      0 4px 16px rgba(0,0,0,.13), 0 2px 4px rgba(0,0,0,.07);
+        --shadow-lg:      0 10px 32px rgba(0,0,0,.16), 0 3px 8px rgba(0,0,0,.08);
+        --shadow-focus:   0 0 0 3px rgba(19,81,180,.22);
+        --radius-sm:      6px;
+        --radius-md:      10px;
+        --radius-lg:      14px;
+        --ease-out:       cubic-bezier(0.16, 1, 0.3, 1);
+        --ease-in-out:    cubic-bezier(0.45, 0, 0.55, 1);
+        --dur-fast:       110ms;
+        --dur-base:       190ms;
       }
 
       /* ── Base ───────────────────────────────────────────────── */
-      body { background-color: #f0f2f5 !important; }
+      body {
+        background: var(--c-surface-0) !important;
+        color: var(--c-ink-1) !important;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
 
-      /* ── Navbar brand ───────────────────────────────────────── */
-      .navbar-brand { font-weight: 700; font-size: 1rem; }
-
-      /* Nav links — indicador deslizante */
-      .navbar-nav .nav-link {
+      /* ── Navbar ─────────────────────────────────────────────── */
+      .navbar {
+        border-bottom: 1px solid rgba(255,255,255,.08) !important;
+      }
+      .navbar-brand {
+        font-weight: 700;
+        font-size: 0.92rem;
+        letter-spacing: -.01em;
+      }
+      /* Força cor branca em todos os contextos de especificidade Bootstrap */
+      nav .navbar-nav .nav-link,
+      .navbar .navbar-nav .nav-link,
+      .navbar-dark .navbar-nav .nav-link,
+      .bg-primary .navbar-nav .nav-link {
+        font-size: 0.83rem !important;
+        font-weight: 500 !important;
+        color: rgba(255,255,255,.90) !important;
         position: relative;
-        transition: color 150ms ease;
+        transition: color var(--dur-fast) ease;
+      }
+      nav .navbar-nav .nav-link:hover,
+      .navbar .navbar-nav .nav-link:hover,
+      .navbar-dark .navbar-nav .nav-link:hover {
+        color: #fff !important;
+        opacity: 1 !important;
+      }
+      nav .navbar-nav .nav-link.active,
+      nav .navbar-nav .nav-link.show,
+      .navbar .navbar-nav .nav-link.active,
+      .navbar .navbar-nav .nav-link.show {
+        color: #fff !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+      }
+      /* Dropdown de navegação — azul Gov.br, texto branco */
+      .navbar-nav .dropdown-menu,
+      .navbar .dropdown-menu {
+        background: #003d7a !important;
+        border: 1px solid rgba(255,255,255,.12) !important;
+        border-radius: var(--radius-md) !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,.30) !important;
+        padding: 6px !important;
+        min-width: 200px;
+      }
+      .navbar-nav .dropdown-menu .dropdown-item,
+      .navbar .dropdown-menu .dropdown-item {
+        font-size: 0.83rem !important;
+        font-weight: 500 !important;
+        color: rgba(255,255,255,.90) !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 8px 14px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+      }
+      .navbar-nav .dropdown-menu .dropdown-item:hover,
+      .navbar-nav .dropdown-menu .dropdown-item:focus,
+      .navbar .dropdown-menu .dropdown-item:hover,
+      .navbar .dropdown-menu .dropdown-item:focus {
+        background: rgba(255,255,255,.12) !important;
+        color: #fff !important;
       }
       .navbar-nav .nav-link::after {
         content: '';
         position: absolute;
-        bottom: 2px;
-        left: 50%;
-        right: 50%;
+        bottom: 2px; left: 50%; right: 50%;
         height: 2px;
-        background: rgba(255,255,255,0.85);
-        border-radius: 1px;
-        transition: left 200ms var(--ease-out), right 200ms var(--ease-out);
+        background: rgba(255,255,255,.9);
+        border-radius: 2px;
+        transition: left var(--dur-base) var(--ease-out),
+                    right var(--dur-base) var(--ease-out);
       }
-      .navbar-nav .nav-link.active::after {
-        left: 10px;
-        right: 10px;
-      }
-      @media (hover: hover) and (pointer: fine) {
+      .navbar-nav .nav-link.active::after { left: 12px; right: 12px; }
+      @media (hover: hover) {
         .navbar-nav .nav-link:not(.active):hover::after {
-          left: 10px;
-          right: 10px;
-          opacity: 0.45;
+          left: 12px; right: 12px; opacity: .40;
         }
       }
 
-      /* ── Cards ──────────────────────────────────────────────── */
-      .bslib-card {
-        border-radius: 8px;
-        box-shadow: 0 1px 4px rgba(0,0,0,.08);
-        transition: transform 200ms var(--ease-out),
-                    box-shadow 200ms var(--ease-out);
+      /* ── Cards (exclui value boxes que têm temas próprios) ──── */
+      .bslib-card:not(.bslib-value-box) {
+        background: var(--c-surface-1) !important;
+        border: 1px solid var(--c-border-sub) !important;
+        border-radius: var(--radius-md) !important;
+        box-shadow: var(--shadow-sm) !important;
+        transition: box-shadow var(--dur-base) var(--ease-out),
+                    transform var(--dur-base) var(--ease-out);
       }
-      .bslib-card .card-header { font-weight: 600; font-size: 0.9rem; }
-
-      @media (hover: hover) and (pointer: fine) {
-        .bslib-card:hover {
+      @media (hover: hover) {
+        .bslib-card:not(.bslib-value-box):hover {
+          box-shadow: var(--shadow-md) !important;
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0,0,0,.12);
         }
+      }
+      .bslib-card:not(.bslib-value-box) .card-header {
+        font-size: 0.78rem !important;
+        font-weight: 700 !important;
+        letter-spacing: .025em !important;
+        text-transform: uppercase !important;
+        padding: 10px 16px !important;
+        border-bottom: 1px solid rgba(255,255,255,.15) !important;
+      }
+      /* Card headers coloridos com gradiente */
+      .bslib-card .card-header.bg-primary {
+        background: linear-gradient(135deg, #004587 0%, #1351b4 100%) !important;
+      }
+      /* Value boxes: deixa o tema do bslib agir, só ajusta sombra/raio */
+      .bslib-value-box {
+        border-radius: var(--radius-md) !important;
+        box-shadow: var(--shadow-md) !important;
+        border: none !important;
+      }
+
+      /* ── Tabs internos (navset_card_underline) ─────────────── */
+      .card > .card-header > .nav-underline,
+      .bslib-card > .card-header > .nav-underline {
+        border-bottom: none !important;
+        gap: 2px;
+      }
+      .nav-underline .nav-link {
+        font-size: 0.8rem !important;
+        font-weight: 500 !important;
+        color: var(--c-ink-2) !important;
+        padding: 7px 14px !important;
+        border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+        border-bottom: 2px solid transparent !important;
+        transition: color var(--dur-fast) ease,
+                    background var(--dur-fast) ease,
+                    border-color var(--dur-fast) ease !important;
+      }
+      .nav-underline .nav-link:hover {
+        color: var(--c-brand) !important;
+        background: rgba(0,69,135,.05) !important;
+      }
+      .nav-underline .nav-link.active {
+        color: var(--c-brand) !important;
+        font-weight: 700 !important;
+        background: rgba(0,69,135,.06) !important;
+        border-bottom-color: var(--c-brand) !important;
       }
 
       /* ── Value boxes ────────────────────────────────────────── */
-      .value-box .value-box-title { font-size: 0.8rem; }
-      .value-box .value-box-value { font-size: 1.5rem; font-weight: 700; }
+      .value-box .value-box-title {
+        font-size: 0.68rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: .07em !important;
+      }
+      .value-box .value-box-value {
+        font-size: 1.8rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -.025em !important;
+        line-height: 1.05 !important;
+      }
 
-      /* ── Botões — feedback de pressão ───────────────────────── */
+      /* ── Botões ─────────────────────────────────────────────── */
       .btn {
-        transition: transform 160ms var(--ease-out),
-                    box-shadow 160ms var(--ease-out);
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        border-radius: var(--radius-sm) !important;
+        transition: transform var(--dur-fast) ease,
+                    box-shadow var(--dur-fast) ease !important;
       }
-      .btn:active {
-        transform: scale(0.97);
-      }
-      @media (hover: hover) and (pointer: fine) {
+      .btn:active { transform: scale(0.97); }
+      @media (hover: hover) {
         .btn-primary:hover {
-          box-shadow: 0 4px 14px rgba(0, 69, 135, 0.30);
+          box-shadow: 0 4px 16px rgba(0,69,135,.32) !important;
         }
       }
 
-      /* ── Tabelas ────────────────────────────────────────────── */
-      .reactable { font-size: 0.88rem; }
+      /* ── Inputs / selects ───────────────────────────────────── */
+      .form-select, .form-control {
+        font-size: 0.82rem !important;
+        border-color: var(--c-border) !important;
+        border-radius: var(--radius-sm) !important;
+        background-color: var(--c-surface-1) !important;
+        transition: border-color var(--dur-fast) ease,
+                    box-shadow var(--dur-fast) ease;
+      }
+      .form-select:focus, .form-control:focus {
+        border-color: var(--c-brand-mid) !important;
+        box-shadow: var(--shadow-focus) !important;
+        outline: none !important;
+      }
+      label, .control-label {
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        color: var(--c-ink-2) !important;
+        margin-bottom: 4px !important;
+      }
 
-      /* ── Painéis de aba — fade ao entrar ────────────────────── */
+      /* ── Sidebar ────────────────────────────────────────────── */
+      .bslib-sidebar-layout > .sidebar {
+        background: var(--c-surface-2) !important;
+        border-right: 1px solid var(--c-border-sub) !important;
+      }
+
+      /* ── DT tables ──────────────────────────────────────────── */
+      .dataTables_wrapper { font-size: 0.8rem; color: var(--c-ink-1); }
+      .dataTables_wrapper .dataTables_filter input {
+        border-radius: var(--radius-sm) !important;
+        font-size: 0.78rem !important;
+      }
+
+      /* ── Tab panels — fade ao entrar ────────────────────────── */
       .tab-content > .tab-pane {
-        padding-top: 14px;
-        animation: pmFadeIn 150ms var(--ease-out) both;
+        padding-top: 12px;
+        animation: pmFadeIn 160ms var(--ease-out) both;
       }
       @keyframes pmFadeIn {
-        from { opacity: 0; transform: translateY(4px); }
-        to   { opacity: 1; transform: translateY(0);   }
+        from { opacity: 0; transform: translateY(3px); }
+        to   { opacity: 1; transform: none; }
       }
 
-      /* ── Sidebar / Filtros ──────────────────────────────────── */
-      .form-select,
-      .form-control {
-        transition: border-color 150ms ease, box-shadow 150ms ease;
+      /* ── Capa: decorações do hero ───────────────────────────── */
+      .pm-hero {
+        position: relative;
+        overflow: hidden;
       }
-      .form-select:focus,
-      .form-control:focus {
-        box-shadow: 0 0 0 3px rgba(0, 69, 135, 0.18);
+      .pm-hero::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: repeating-linear-gradient(
+          -55deg,
+          transparent, transparent 28px,
+          rgba(255,255,255,.025) 28px, rgba(255,255,255,.025) 29px
+        );
+        pointer-events: none;
+      }
+      .pm-hero::after {
+        content: '';
+        position: absolute;
+        right: -80px; bottom: -80px;
+        width: 320px; height: 320px;
+        border-radius: 50%;
+        background: radial-gradient(circle,
+          rgba(255,120,0,.18) 0%,
+          transparent 65%);
+        pointer-events: none;
       }
 
-      /* ── Acessibilidade — prefers-reduced-motion ────────────── */
+      /* ── Acessibilidade ─────────────────────────────────────── */
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
-          animation-duration:   0.01ms !important;
-          transition-duration:  0.01ms !important;
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
         }
       }
 
