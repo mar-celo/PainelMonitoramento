@@ -45,9 +45,14 @@ app_ui <- function(request) {
           mod_indigenas_ui("indigenas")
         ),
         bslib::nav_panel(
-          title = shiny::tagList(shiny::icon("users"), " Raça e Liderança"),
+          title = shiny::tagList(shiny::icon("users"), "Raça e Liderança"),
           value = "etnia",
           mod_etnia_lideranca_ui("etnia")
+        ),
+        bslib::nav_panel(
+          title = shiny::tagList(shiny::icon("users"), "PFGP"),
+          value = "pfgp",
+          mod_pfgp_ui("pfgp")
         )
       ),
 
