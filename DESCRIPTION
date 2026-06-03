@@ -16,6 +16,8 @@ Imports:
     echarts4r,
     forcats,
     ggplot2,
+    ggtext,
+    data.table,
     golem,
     here,
     htmltools,

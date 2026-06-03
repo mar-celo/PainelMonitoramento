@@ -3,6 +3,10 @@
 #' @param request Internal parameter for `{shiny}`.
 #'     DO NOT REMOVE.
 #' @noRd
+
+library(ggplot2)
+library(data.table)
+
 app_ui <- function(request) {
   shiny::tagList(
     golem_add_external_resources(),

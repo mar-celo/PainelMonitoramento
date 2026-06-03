@@ -8,4 +8,5 @@ app_server <- function(input, output, session) {
   mod_capa_server("capa", root_session = session)
   mod_indigenas_server("indigenas")
   mod_etnia_lideranca_server("etnia")
+  mod_pfgp_server('pfgp')
 }
