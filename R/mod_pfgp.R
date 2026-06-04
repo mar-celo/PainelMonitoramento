@@ -197,7 +197,7 @@ mod_pfgp_server <- function(id) {
               colour = nivel_fce_cce)
           ) +
         ylim(c(0,1.2*max_p_mulheres)) +
-        geom_line(size = .8) +
+        geom_line(linewidth = .8) +
         geom_point(size = 2) +
         labs(colour = NULL,y = "Percentual de mulheres",x = NULL) -> gr_lid_mulheres
 
@@ -243,7 +243,7 @@ mod_pfgp_server <- function(id) {
               colour = nivel_fce_cce)
         ) +
         ylim(c(0,1.2*max_p_efet)) +
-        geom_line(size = .8) +
+        geom_line(linewidth = .8) +
         geom_point(size = 2) +
         labs(colour = NULL,y = "Percentual de efetivos",x = NULL) -> gr_lid_efetivos
 
@@ -296,7 +296,7 @@ mod_pfgp_server <- function(id) {
               colour = REGIAO_NATURALIDADE)
         ) +
         ylim(c(0,1.2*max_p_efet_origem)) +
-        geom_line(size = .8) +
+        geom_line(linewidth = .8) +
         geom_point(size = 2) +
         labs(colour = NULL,y = "Percentual com FCE/CCE 13 ou maior",x = NULL) -> gr_lid_origem
 
