@@ -162,7 +162,7 @@ mod_pfgp_server <- function(id) {
     ##
     # > Carregamento de dados ----
     ##
-    dt_liderancas  <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
+    df_liderancas  <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
 
 
 
