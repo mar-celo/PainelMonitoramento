@@ -12,9 +12,9 @@ mod_pfgp_ui <- function(id) {
       id = ns("nav_pfgp"),
       selected = "pfgp_1",
 
-      # ------------------------------------------------------------------
-      # Aba 1: Dimensão 1
-      # ------------------------------------------------------------------
+      # ------------------------------------------------------------------.
+      # Aba 1: UI, Dimensão 1 ------
+      # ------------------------------------------------------------------.
       bslib::nav_panel(
         title = "Dimensão 1: Dimensionamento\nda Força de Trabalho",
         value = "pfgp_1",
@@ -30,9 +30,9 @@ mod_pfgp_ui <- function(id) {
         )
       ),
 
-      # ------------------------------------------------------------------
-      # Aba 2: Dimensão 2
-      # ------------------------------------------------------------------
+      # ------------------------------------------------------------------.
+      # Aba 2: UI, Dimensão 2 -----
+      # ------------------------------------------------------------------.
       bslib::nav_panel(
         title = "Dimensão 2: Alocação, Ambientação, Estágio Probatório e Bem-Estar",
         value = "pfgp_2",
@@ -56,9 +56,9 @@ mod_pfgp_ui <- function(id) {
         )
       ),
 
-      # ------------------------------------------------------------------
-      # Aba 3: Dimensão 3:
-      # ------------------------------------------------------------------
+      # ------------------------------------------------------------------.
+      # Aba 3: UI, Dimensão 3 ------
+      # ------------------------------------------------------------------.
       bslib::nav_panel(
         title = "Dimensão 3: Desenvolvimento e Desempenho de Pessoas e Formação de Lideranças Públicas",
         value = "pfgp_3",
@@ -92,9 +92,9 @@ mod_pfgp_ui <- function(id) {
           )
         ),
 
-      # ------------------------------------------------------------------
-      # Aba 4: Dimensão 4
-      # ------------------------------------------------------------------
+      # ------------------------------------------------------------------.
+      # Aba 4: UI, Dimensão 4 -----
+      # ------------------------------------------------------------------.
       bslib::nav_panel(
         title = "Dimensão 4: Carreiras, Cargos, Progressão e Promoção",
         value = "pfgp_4",
@@ -109,9 +109,9 @@ mod_pfgp_ui <- function(id) {
         )
       ),
 
-      # ------------------------------------------------------------------
-      # Aba 5: Dimensão 5
-      # ------------------------------------------------------------------
+      # ------------------------------------------------------------------.
+      # Aba 5: ui, Dimensão 5 ------
+      # ------------------------------------------------------------------.
       bslib::nav_panel(
         title = "Dimensão 5: Remuneração, Benefícios, Reconhecimento e Recompensas Não Pecuniárias",
         value = "pfgp_5",
@@ -126,9 +126,9 @@ mod_pfgp_ui <- function(id) {
         )
       ),
 
-      # ------------------------------------------------------------------
-      # Aba 6: Dimensão 6
-      # ------------------------------------------------------------------
+      # ------------------------------------------------------------------.
+      # Aba 6: ui, Dimensão 6 ------
+      # ------------------------------------------------------------------.
       bslib::nav_panel(
         title = "Dimensão 6: Aposentação, Pensões e Desligamentos",
         value = "pfgp_",
@@ -154,16 +154,21 @@ mod_pfgp_ui <- function(id) {
 mod_pfgp_server <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    # ------------------------------------------------------------------
-    # Carregamento de dados
-    # ------------------------------------------------------------------
-    df_liderancas  <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
+    # -----------------------------------------------------------------.
+    # Dimensão 3, server  ------
+    # -----------------------------------------------------------------.
+
+
+    ##
+    # > Carregamento de dados ----
+    ##
+    dt_liderancas  <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
 
 
 
-    # ------------------------------------------------------------------
-    # Série anual % mulheres em CCE/FCE
-    # ------------------------------------------------------------------
+    ##
+    # > Série anual % mulheres em CCE/FCE -----
+    ##
 
 
 
@@ -207,9 +212,9 @@ mod_pfgp_server <- function(id) {
 
 
 
-    # ------------------------------------------------------------------
-    # Série anual: % de cargos CCE/FCE ocupados por efetivos
-    # ------------------------------------------------------------------
+    ##
+    # > Série anual: % de cargos CCE/FCE ocupados por efetivos ----
+    ##
 
 
 
@@ -255,9 +260,9 @@ mod_pfgp_server <- function(id) {
 
 
 
-    # ------------------------------------------------------------------
-    # Série anual: % de servidores efetivos em cargos FCE
-    # ------------------------------------------------------------------
+    ##
+    # > Série anual: % de servidores efetivos em cargos FCE ----
+    ##
 
 
 
@@ -303,6 +308,20 @@ mod_pfgp_server <- function(id) {
       ggplotly_c(gr_lid_origem)
 
     })
+
+    # -----------------------------------------------------------------.
+    # Dimensão 4, server  ------
+    # -----------------------------------------------------------------.
+
+
+    ##
+    # > Carregamento de dados ----
+    ##
+    dt_liderancas  <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
+
+
+
+
   })
   }
 
