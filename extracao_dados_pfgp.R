@@ -147,3 +147,135 @@ dt_liderancas[,.(n = sum(n)),
 # salvando
 saveRDS(dt_liderancas,
         file = 'data-raw/data_pfgp/df_liderancas.rds')
+
+
+
+# ==============================================================================.
+# Dimensão 4 - Carreiras, Cargos, Progressão e Promoção  -------
+# ==============================================================================.
+
+# Leitura dos dados apontando para o tabelão na Camada Bronze
+# df_tabelao <- sdf_sql(sc,"SELECT * FROM `mgi-bronze`.`DIGID`.`CGINF`.`01.Bases_SAS`.`COEST`.`tabelao_csv`.`VW001_TABELAO_SERV_202604.csv`")
+# df_tabelao <- spark_read_csv(
+#   sc,
+#   name = "tabelao",
+#   # delimiter = "\t",
+#   # path = "/Volumes/mgi-bronze/raw_data_volumes/DIGID/CGINF/01.Bases_SAS/COEST/tabelao_csv/VW001_TABELAO_SERV_202602.csv",
+#   path = "/Volumes/mgi-bronze/raw_data_volumes/mgi/DIGID/CGINF/01.Bases_SAS/COEST/tabelao_csv/VW001_TABELAO_SERV_202604.csv") %>%
+#   janitor::clean_names()
+
+
+df_tabelao %>%
+  # filter(no_cor_origem_etnica == "INDIGENA") %>%
+  filter(!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
+         co_orgao != 99072,
+         !sg_regime_juridico %in% c("RMI","ETE","ETG"),
+         !regime_jur_e_sit %in% c("EST-18","EST-19","EST-41","EST-42","ANS-36","ANS-37")
+         ) %>%
+  group_by(var_0001_situacao) %>%
+  summarise(total = n())
+
+
+df_uorg_vinc     <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`UORG_VINC`')
+df_orgao_vinc    <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`ORGAO_VINC`') %>% collect %>% setDT()
+df_grupo_natjur  <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`GRUPO_NAT_JURIDICA_CNNJ`') %>% collect %>% setDT()
+df_natjur        <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`NATUREZA_JURIDICA_CNNJ`') %>% collect %>% setDT()
+df_sitserv       <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`SITUACAO_FUNC_VINC_SERV`') %>% collect %>% setDT()
+df_grupo_sitserv <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`GRUPO_SIT_VINC_SERV`') %>% collect %>% setDT()
+a17              <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`ESTADO_VINC_SERV`') %>% collect %>% setDT()
+
+df_tabelao %>%
+  group_by(co_orgao,
+           no_orgao,
+           co_natureza_juridica,
+           no_natureza_juridica) %>%
+  summarise(total = n()) %>%
+  collect() %>%
+  setDT -> tabelao_org_vinc
+
+tabelao_org_vinc <-
+  left_join(tabelao_org_vinc,df_orgao_vinc,
+            by = c("co_orgao" = "orgao_vinc")
+            ) %>%
+  left_join(df_natjur %>% select(natureza_juridica_cnnj,nome_natureza_juridica_cnnj),
+            by = "natureza_juridica_cnnj")%>%
+  left_join(df_grupo_natjur %>% select(grupo_nat_juridica_cnnj,nome_grupo_nat_juridica_cnnj),
+            by = "grupo_nat_juridica_cnnj")
+
+
+
+
+df_dwsiape_mensal_situacao <- spark_read_parquet(
+    sc,
+    name = "pep_historico",
+    # delimiter = "\t",
+    # path = "/Volumes/mgi-bronze/raw_data_volumes/DIGID/CGINF/01.Bases_SAS/COEST/tabelao_csv/VW001_TABELAO_SERV_202602.csv",
+    path = "/Volumes/mgi-bronze/raw_data_volumes/mgi/cginf/servidores_dwsiape_mensal_situacao") %>%
+    janitor::clean_names()
+
+###
+# 4.1 - Carreiras Transversais ----
+##
+
+
+
+## agregação inicial
+dt_transversais <-
+  df_dwsiape_pfgp %>%
+  filter(NOME_GRUPO_SIT_VINC_SERV %in% "Ativo") %>%
+  mutate(efetivo = !(CARGO %in% 0 & CARGO_ORIGEM %in% 0)) %>%
+  group_by(
+    across(
+      all_of(
+        c(#agreg_min,
+          "GRUPO_CARGO",
+          "NOME_GRUPO_CARGO",
+          "CARGO",
+          "NOME_CARGO",
+          "NOME2_CARGO",
+          "NOME_GRUPO_SIT_VINC_SERV",
+          "efetivo")
+      )
+    )
+  ) %>%
+  summarise(n = sum(qtd_vinculo)) %>%
+  collect() %>%
+  setDT
+
+
+## trabalhando região de naturalidade e nível de função FCE/CCE
+
+# regiões
+dt_liderancas <- left_join(dt_liderancas,regioes_list,by = 'UF_NATURALIDADE')
+
+# nível de função
+dt_liderancas[NOME_FUNCAO %in% c("CCX","FEX"),
+              `:=`(tipo_funcao = NOME_FUNCAO,
+                   nivel_fce_cce = gsub("(CCX|FEX)-[0-9]{2}","",NOME_NIVEL_FUNCAO) %>%
+                     as.numeric() %>%
+                     cut(breaks = c(0,12,18),
+                         right = T,
+                         include.lowest = T,
+                         labels = c("Níveis 1 a 12",
+                                    "Níveis 13 a 18")
+                     )
+              )]
+dt_liderancas[,lideranca := !is.na(nivel_fce_cce)]
+
+# reagregando
+dt_liderancas[,.(n = sum(n)),
+              by = c("MES",
+                     "ORGAO_VINC",
+                     "NOME_ORGAO_VINC",
+                     "NOME_ORGAO_VINC_COMPLETO",
+                     "NOME_SEXO",
+                     "REGIAO_NATURALIDADE",
+                     "efetivo",
+                     "lideranca",
+                     "tipo_funcao",
+                     "nivel_fce_cce")] -> dt_liderancas
+
+# salvando
+saveRDS(dt_liderancas,
+        file = 'data-raw/data_pfgp/df_liderancas.rds')
+
