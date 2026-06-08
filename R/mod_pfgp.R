@@ -174,16 +174,16 @@ mod_pfgp_server <- function(id) {
 
     # agregando
     serie_lid_mulheres <-
-      dt_liderancas %>%
-      filter((lideranca)) %>%
-      mutate(ano = substr(MES,1,4) %>% as.numeric,
-             n_fem = ifelse(NOME_SEXO %in% "Fem",n,0)) %>%
-      group_by(ano,nivel_fce_cce) %>%
-      summarise(n = sum(n),
+      df_liderancas |>
+      dplyr::filter((lideranca)) |>
+      dplyr::mutate(ano = substr(MES,1,4) |> as.numeric(),
+             n_fem = ifelse(NOME_SEXO %in% "Fem",n,0)) |>
+      dplyr::group_by(ano,nivel_fce_cce) |>
+      dplyr::summarise(n = sum(n),
                 n_fem = sum(n_fem)
-      ) %>%
-      mutate(p_mulheres = round(100*n_fem/n,1)) %>%
-      filter(ano >= 2022)
+      ) |>
+      dplyr::mutate(p_mulheres = round(100*n_fem/n,1)) |>
+      dplyr::filter(ano >= 2022)
 
     # cat("\n\ndeu certo aqui!\n\n")
 
@@ -195,14 +195,14 @@ mod_pfgp_server <- function(id) {
 
 
       # objeto ggplot
-      serie_lid_mulheres %>%
+      serie_lid_mulheres |>
         ggplot_cat(
           aes(x = ano,
               y = p_mulheres,
               colour = nivel_fce_cce)
           ) +
         ylim(c(0,1.2*max_p_mulheres)) +
-        geom_line(size = .8) +
+        geom_line(linewidth = .8) +
         geom_point(size = 2) +
         labs(colour = NULL,y = "Percentual de mulheres",x = NULL) -> gr_lid_mulheres
 
@@ -220,16 +220,16 @@ mod_pfgp_server <- function(id) {
 
     # agregando
     serie_lid_efetivos <-
-      dt_liderancas %>%
-      filter((lideranca)) %>%
-      mutate(ano = substr(MES,1,4) %>% as.numeric,
-             n_efet = ifelse(efetivo,n,0)) %>%
-      group_by(ano,nivel_fce_cce) %>%
-      summarise(n = sum(n),
+      df_liderancas |>
+      dplyr::filter((lideranca)) |>
+      dplyr::mutate(ano = substr(MES,1,4) |> as.numeric(),
+             n_efet = ifelse(efetivo,n,0)) |>
+      dplyr::group_by(ano,nivel_fce_cce) |>
+      dplyr::summarise(n = sum(n),
                 n_efet = sum(n_efet)
-      ) %>%
-      mutate(p_efet = round(100*n_efet/n,1)) %>%
-      filter(ano >= 2022)
+      ) |>
+      dplyr::mutate(p_efet = round(100*n_efet/n,1)) |>
+      dplyr::filter(ano >= 2022)
 
     # cat("\n\ndeu certo aqui!\n\n")
 
@@ -241,14 +241,14 @@ mod_pfgp_server <- function(id) {
 
 
       # objeto ggplot
-      serie_lid_efetivos %>%
+      serie_lid_efetivos |>
         ggplot_cat(
           aes(x = ano,
               y = p_efet,
               colour = nivel_fce_cce)
         ) +
         ylim(c(0,1.2*max_p_efet)) +
-        geom_line(size = .8) +
+        geom_line(linewidth = .8) +
         geom_point(size = 2) +
         labs(colour = NULL,y = "Percentual de efetivos",x = NULL) -> gr_lid_efetivos
 
@@ -268,20 +268,20 @@ mod_pfgp_server <- function(id) {
 
     # agregando
     serie_origem_lid <-
-      dt_liderancas %>%
-      # filter(efetivo) %>%
-      mutate(ano = substr(MES,1,4) %>% as.numeric,
+      df_liderancas |>
+      # dplyr::filter(efetivo) |>
+      dplyr::mutate(ano = substr(MES,1,4) |> as.numeric(),
              n_lid_1a12 = ifelse(nivel_fce_cce %in% c("Níveis 1 a 12"),n,0),
              n_lid_13a18 = ifelse(nivel_fce_cce %in% c("Níveis 13 a 18"),n,0)
-             ) %>%
-      group_by(ano,REGIAO_NATURALIDADE) %>%
-      summarise(n = sum(n),
+             ) |>
+      dplyr::group_by(ano,REGIAO_NATURALIDADE) |>
+      dplyr::summarise(n = sum(n),
                 n_lid_1a12 = sum(n_lid_1a12),
                 n_lid_13a18 = sum(n_lid_13a18)
-      ) %>%
-      mutate(p_lid_1a12 = round(100*n_lid_1a12/n,1),
-             p_lid_13a18 = round(100*n_lid_13a18/n,1)) %>%
-      filter(ano >= 2022,
+      ) |>
+      dplyr::mutate(p_lid_1a12 = round(100*n_lid_1a12/n,1),
+             p_lid_13a18 = round(100*n_lid_13a18/n,1)) |>
+      dplyr::filter(ano >= 2022,
              !is.na(REGIAO_NATURALIDADE))
 
     # cat("\n\ndeu certo aqui!\n\n")
@@ -294,14 +294,14 @@ mod_pfgp_server <- function(id) {
 
 
       # objeto ggplot
-      serie_origem_lid %>%
+      serie_origem_lid |>
         ggplot_cat(
           aes(x = ano,
               y = p_lid_13a18,
               colour = REGIAO_NATURALIDADE)
         ) +
         ylim(c(0,1.2*max_p_efet_origem)) +
-        geom_line(size = .8) +
+        geom_line(linewidth = .8) +
         geom_point(size = 2) +
         labs(colour = NULL,y = "Percentual com FCE/CCE 13 ou maior",x = NULL) -> gr_lid_origem
 
