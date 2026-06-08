@@ -100,7 +100,7 @@ plot_config <-
 
 # 'NOVO' ggplot para escala de cores categóricas
 ggplot_cat <- function(...){
-  ggplot(...) +
+  ggplot2::ggplot(...) +
     plot_fill_cat +
     plot_color_cat +
     plot_config
@@ -109,7 +109,7 @@ ggplot_cat <- function(...){
 
 # 'NOVO' ggplot para escala de cores contínuoas
 ggplot_cont <- function(...){
-  ggplot(...) +
+  ggplot2::ggplot(...) +
     plot_fill_cont +
     plot_color_cont +
     plot_config
@@ -118,7 +118,7 @@ ggplot_cont <- function(...){
 
 # 'NOVO' ggplot para escala de cores contínuoas
 ggplot_cont2 <- function(...){
-  ggplot(...) +
+  ggplot2::ggplot(...) +
     plot_fill_cont2 +
     plot_color_cont2 +
     plot_config
@@ -153,7 +153,7 @@ likert_values <- c("Discordo totalmente" = "#CA0020",
 
 
 ggplot_likert <- function(...){
-  ggplot(...) +
+  ggplot2::ggplot(...) +
     # scale_fill_brewer(palette = "RdBu") +
     # scale_color_brewer(palette = "RdBu")+
     scale_fill_manual(values = likert_values) +
