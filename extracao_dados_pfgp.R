@@ -252,6 +252,7 @@ meses_tabeloes <- str_extract_all(lista_de_tabeloes$name,"20[0-9]{0,4}") %>% unl
 ano_cor <- year(Sys.Date())
 ultimo_mes <- grep(paste0("^",ano_cor),meses_tabeloes,value = T) %>% max()
 meses_analise <- grep("(12$)",meses_tabeloes,value = T) %>% c(.,ultimo_mes)
+# meses_analise <- c('201912',grep("202",meses_tabeloes,value = T))
 
 
 ## Rodando consulta para cada mês
@@ -262,21 +263,27 @@ transverais_ag_list <-
            cat("Conectando tabelão de ",m,"\n")
            df_tabelao <- spark_read_csv(
              sc,
-             name = "tabelao",
+             name = "tabelao2",
              path = paste0(path_tabeloes,"VW001_TABELAO_SERV_",m,".csv")) %>%
              janitor::clean_names()
+
+           colunas_dispoiniveis <- colnames(df_tabelao)
+
+           # return(colunas_dispoiniveis)})
 
            cat("Filtro PEP e agregando\n\n")
            df_agreg_transv <-
              df_tabelao  %>%
-             filter(!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
+             filter(!co_natureza_juridica %in% c(10,5,6),
+                    #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
                     co_orgao != 99072,
                     !sg_regime_juridico %in% c("RMI","ETE","ETG"),
                     !regime_jur_e_sit %in%
                       c(#"EST-18","EST-19",
                         "EST-41","EST-42","ANS-36","ANS-37"
                         ),
-                    var_0001_situacao %in% 'ATIVO'
+                    var_0001_situacao %in% 'ATIVO'#,
+                    # var_0182_forca_trab %in% 1
                     ) %>%
              group_by(
                across(
@@ -284,7 +291,14 @@ transverais_ag_list <-
                    c('compet',
                      agreg_min,
                      "co_sit_serv",
-                     "no_sit_serv")
+                     "no_sit_serv",
+                     "co_cargo",
+                     "no_cargo",
+                     "co_cargo_origem",
+                     "no_cargo_origem",
+                     "var_0182_forca_trab") %>%
+                     # das colunas listadas, pegando apenas as colunas disponíveis
+                     intersect(colunas_dispoiniveis)
                    )
                  )
                ) %>%
@@ -298,112 +312,76 @@ transverais_ag_list <-
 
 transverais_ag_tab <- rbindlist(transverais_ag_list,fill = T)
 
-df_tabelao  %>%
-  group_by(var_0001_situacao) %>%
-  summarise(total = n())
+## Redefinindo cargo
+transverais_ag_tab[,no_cargo_completo := ifelse(co_cargo %in% c(0,NA),
+                                                ifelse(co_cargo_origem %in% c(0,NA),
+                                                       "Não Efetivo",
+                                                       no_cargo_origem
+                                                       # paste0(no_grupo_cargo_origem," - ",no_cargo_origem)
+                                                       ),
+                                                no_cargo
+                                                # paste0(no_grupo_cargo," - ",no_cargo)
+                                                )
+                   ]
+
+## Definindo força de trabalho e exercício descentralizado
+transverais_ag_tab[,`:=`(forca_trab = (!co_sit_serv %in% c("44","49","59","27","96","69","CLT","RJ","45","8"))|(var_0182_forca_trab %in% 1),
+                         transversal = co_sit_serv %in% c(18,77,78))]
+
+## tabela com as situações excluídas das força de trabalho
+sit_serv_out_forca <- transverais_ag_tab[!(forca_trab),.(n = sum(n)),
+                                         .(co_sit_serv,no_sit_serv)]
+
+## filtrando na força de trabalho
+transverais_ag_tab <- filter(transverais_ag_tab,forca_trab)
+
+### Indicador 58: % de cargos transversais
+tab_cargo_transversal <-
+  list(transverais_ag_tab[,.(sg_orgao = "Total",
+                             transversal = any(transversal)),
+                          .(compet,
+                            no_cargo_completo)],
+       transverais_ag_tab[,.(transversal = any(transversal)),
+                          .(sg_orgao,
+                            compet,
+                            no_cargo_completo)]
+       ) %>%
+  rbindlist(fill = T) %>%
+  .[,.(.N,
+       n_transversais = sum(transversal)),
+    .(sg_orgao,compet)] %>%
+  .[,p_cargo_transv := round(100*n_transversais/N,2)]
 
 
-df_orgao_vinc[orgao_vinc %in% sit_serv_origens[grepl("desc",no_sit_serv,ignore.case = T),co_orgao_origem],] %>% View("orgao_origem")
+### Indicador 59: % de servidores ativos em cargos transversais
+tab_ativo_transversal <-
+  transverais_ag_tab[,.(N = sum(n),
+                        transversais = sum(n*transversal)),
+                     .(compet,
+                       sg_orgao)
+                     ]
 
 
-df_uorg_vinc     <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`UORG_VINC`')
-df_grupo_natjur  <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`GRUPO_NAT_JURIDICA_CNNJ`') %>% collect %>% setDT()
-df_natjur        <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`NATUREZA_JURIDICA_CNNJ`') %>% collect %>% setDT()
-df_sitserv       <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`SITUACAO_FUNC_VINC_SERV`') %>% collect %>% setDT()
-df_grupo_sitserv <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`GRUPO_SIT_VINC_SERV`') %>% collect %>% setDT()
-a17              <- sdf_sql(sc,'SELECT * FROM `mgi-ouro`.`bd_dwsiape`.`ESTADO_VINC_SERV`') %>% collect %>% setDT()
+### Indicador 60: distribuição por raça/gênero, transversais x não transversais
+tab_raca_genero_transversal <-
+  transverais_ag_tab[,.(N = sum(n)),
+                     .(compet,
+                       transversal,
+                       sg_orgao,
+                       no_cor_origem_etnica,
+                       co_sexo)
+  ]
 
-df_tabelao %>%
-  group_by(co_orgao,
-           no_orgao,
-           co_natureza_juridica,
-           no_natureza_juridica) %>%
-  summarise(total = n()) %>%
-  collect() %>%
-  setDT -> tabelao_org_vinc
-
-tabelao_org_vinc <-
-  left_join(tabelao_org_vinc,df_orgao_vinc,
-            by = c("co_orgao" = "orgao_vinc")
-            ) %>%
-  left_join(df_natjur %>% select(natureza_juridica_cnnj,nome_natureza_juridica_cnnj),
-            by = "natureza_juridica_cnnj")%>%
-  left_join(df_grupo_natjur %>% select(grupo_nat_juridica_cnnj,nome_grupo_nat_juridica_cnnj),
-            by = "grupo_nat_juridica_cnnj")
-
-
-
-df_dwsiape_mensal_situacao <- spark_read_parquet(
-    sc,
-    name = "pep_historico",
-    # delimiter = "\t",
-    # path = "/Volumes/mgi-bronze/raw_data_volumes/DIGID/CGINF/01.Bases_SAS/COEST/tabelao_csv/VW001_TABELAO_SERV_202602.csv",
-    path = "/Volumes/mgi-bronze/raw_data_volumes/mgi/cginf/servidores_dwsiape_mensal_situacao") %>%
-    janitor::clean_names()
-
-###
-# 4.1 - Carreiras Transversais ----
-##
-
-
-
-## agregação inicial
-dt_transversais <-
-  df_dwsiape_pfgp %>%
-  filter(NOME_GRUPO_SIT_VINC_SERV %in% "Ativo") %>%
-  mutate(efetivo = !(CARGO %in% 0 & CARGO_ORIGEM %in% 0)) %>%
-  group_by(
-    across(
-      all_of(
-        c(#agreg_min,
-          "GRUPO_CARGO",
-          "NOME_GRUPO_CARGO",
-          "CARGO",
-          "NOME_CARGO",
-          "NOME2_CARGO",
-          "NOME_GRUPO_SIT_VINC_SERV",
-          "efetivo")
-      )
-    )
-  ) %>%
-  summarise(n = sum(qtd_vinculo)) %>%
-  collect() %>%
-  setDT
-
-
-## trabalhando região de naturalidade e nível de função FCE/CCE
-
-# regiões
-dt_liderancas <- left_join(dt_liderancas,regioes_list,by = 'UF_NATURALIDADE')
-
-# nível de função
-dt_liderancas[NOME_FUNCAO %in% c("CCX","FEX"),
-              `:=`(tipo_funcao = NOME_FUNCAO,
-                   nivel_fce_cce = gsub("(CCX|FEX)-[0-9]{2}","",NOME_NIVEL_FUNCAO) %>%
-                     as.numeric() %>%
-                     cut(breaks = c(0,12,18),
-                         right = T,
-                         include.lowest = T,
-                         labels = c("Níveis 1 a 12",
-                                    "Níveis 13 a 18")
-                     )
-              )]
-dt_liderancas[,lideranca := !is.na(nivel_fce_cce)]
-
-# reagregando
-dt_liderancas[,.(n = sum(n)),
-              by = c("MES",
-                     "ORGAO_VINC",
-                     "NOME_ORGAO_VINC",
-                     "NOME_ORGAO_VINC_COMPLETO",
-                     "NOME_SEXO",
-                     "REGIAO_NATURALIDADE",
-                     "efetivo",
-                     "lideranca",
-                     "tipo_funcao",
-                     "nivel_fce_cce")] -> dt_liderancas
 
 # salvando
-saveRDS(dt_liderancas,
-        file = 'data-raw/data_pfgp/df_liderancas.rds')
+saveRDS(tab_cargo_transversal,
+        file = 'data-raw/data_pfgp/tab_cargo_transversal.rds')
+
+
+saveRDS(tab_ativo_transversal,
+        file = 'data-raw/data_pfgp/tab_ativo_transversal.rds')
+
+
+saveRDS(tab_raca_genero_transversal,
+        file = 'data-raw/data_pfgp/tab_raca_genero_transversal.rds')
 
