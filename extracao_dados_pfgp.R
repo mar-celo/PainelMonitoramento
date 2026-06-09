@@ -305,7 +305,7 @@ transverais_ag_list <-
              summarise(n = n()) %>%
              collect() %>%
              setDT()
-           return(df_agreg_transv)
+           return(df_agreg_transv,fill = T)
            },
          simplify = F)
 (tf <- difftime(Sys.time(),ti,units = "secs"))
@@ -341,6 +341,7 @@ tab_cargo_transversal <-
                              transversal = any(transversal)),
                           .(compet,
                             no_cargo_completo)],
+
        transverais_ag_tab[,.(transversal = any(transversal)),
                           .(sg_orgao,
                             compet,
@@ -349,17 +350,48 @@ tab_cargo_transversal <-
   rbindlist(fill = T) %>%
   .[,.(.N,
        n_transversais = sum(transversal)),
-    .(sg_orgao,compet)] %>%
-  .[,p_cargo_transv := round(100*n_transversais/N,2)]
+    .(sg_orgao,compet)]
 
 
 ### Indicador 59: % de servidores ativos em cargos transversais
 tab_ativo_transversal <-
-  transverais_ag_tab[,.(N = sum(n),
-                        transversais = sum(n*transversal)),
-                     .(compet,
-                       sg_orgao)
-                     ]
+  list(
+
+    transverais_ag_tab[,.(ag_orgao = "total",
+                          ag_sit = "total",
+                          sg_orgao = "Total",
+                          no_sit_serv = "Total",
+                          N = sum(n)),
+                       .(transversal,
+                         compet)],
+
+    transverais_ag_tab[,.(ag_orgao = "total",
+                          ag_sit = "por sit",
+                          sg_orgao = "Total",
+                          N = sum(n)),
+                       .(compet,
+                         transversal,
+                         no_sit_serv)],
+
+    transverais_ag_tab[,.(ag_orgao = "por_orgao",
+                          ag_sit = "total",
+                          no_sit_serv = "Total",
+                          N = sum(n)),
+                       .(sg_orgao,
+                         transversal,
+                         compet)],
+
+    transverais_ag_tab[,.(ag_orgao = "por_orgao",
+                          ag_sit = "por_sit",
+                          N = sum(n)),
+                       .(sg_orgao,
+                         compet,
+                         transversal,
+                         no_sit_serv)]
+  ) %>%
+  rbindlist(fill = T) %>%
+  .[,N_total := sum(N),.(ag_orgao,ag_sit,sg_orgao,compet)] %>%
+  select(-ag_sit,-ag_orgao)
 
 
 ### Indicador 60: distribuição por raça/gênero, transversais x não transversais

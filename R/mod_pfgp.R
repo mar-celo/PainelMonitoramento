@@ -33,28 +33,29 @@ mod_pfgp_ui <- function(id) {
       # ------------------------------------------------------------------.
       # Aba 2: UI, Dimensão 2 -----
       # ------------------------------------------------------------------.
-      bslib::nav_panel(
-        title = "Dimensão 2: Alocação, Ambientação, Estágio Probatório e Bem-Estar",
-        value = "pfgp_2",
-        icon  = shiny::icon("building"),
-        bslib::layout_columns(
-          col_widths = c(6, 6),
-          bslib::card(
-            bslib::card_header(
-              class = "bg-primary text-white",
-              shiny::icon("sitemap"), " Por Órgão Superior"
-            ),
-            # bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_superior"))))
-          ),
-          bslib::card(
-            bslib::card_header(
-              class = "bg-primary text-white",
-              shiny::icon("building"), " Por Órgão Vinculado"
-            )#,
-            # bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_vinculado"))))
-          )
-        )
-      ),
+
+      # bslib::nav_panel(
+      #   title = "Dimensão 2: Alocação, Ambientação, Estágio Probatório e Bem-Estar",
+      #   value = "pfgp_2",
+      #   icon  = shiny::icon("building"),
+      #   bslib::layout_columns(
+      #     col_widths = c(6, 6),
+      #     bslib::card(
+      #       bslib::card_header(
+      #         class = "bg-primary text-white",
+      #         shiny::icon("sitemap"), " Por Órgão Superior"
+      #       ),
+      #       # bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_superior"))))
+      #     ),
+      #     bslib::card(
+      #       bslib::card_header(
+      #         class = "bg-primary text-white",
+      #         shiny::icon("building"), " Por Órgão Vinculado"
+      #       )#,
+      #       # bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_vinculado"))))
+      #     )
+      #   )
+      # ),
 
       # ------------------------------------------------------------------.
       # Aba 3: UI, Dimensão 3 ------
@@ -85,7 +86,7 @@ mod_pfgp_ui <- function(id) {
             bslib::card_header(
               class = "bg-primary text-white",
               shiny::icon("chart-line"),
-              "Evolução Mensal – % de servidores em Cargos CCE/FCE por origem territorial"
+              "Evolução Anual – % de servidores em Cargos CCE/FCE por origem territorial"
               ),
             bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_lidera_origem"), height = "380px")))
             )
@@ -99,49 +100,74 @@ mod_pfgp_ui <- function(id) {
         title = "Dimensão 4: Carreiras, Cargos, Progressão e Promoção",
         value = "pfgp_4",
         icon  = shiny::icon("chart-bar"),
-        bslib::card(
-          bslib::card_header(
-            class = "bg-primary text-white",
-            shiny::icon("chart-bar"),
-            " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
-          )#,
-          # bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
-        )
-      ),
+        bslib::layout_columns(
+          col_widths = c(6,6),
+          bslib::layout_columns(
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                "Percentual de cargos com exercício descentralizado"
+              ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("p_cargos_descent"), height = "420px")))
+            ),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                "Percentual de servidores ativos em exercício descentralizado"
+              ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("p_serv_descent"), height = "420px")))
+            )
+          ),
+          bslib::layout_columns(
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                "Distribuição por raça e gênero, exercícios descentralizados X não descentralizados"
+              ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("dist_racagen_descent"), height = "420px")))
+            )
+            )
+          )
+        )#,
 
       # ------------------------------------------------------------------.
       # Aba 5: ui, Dimensão 5 ------
       # ------------------------------------------------------------------.
-      bslib::nav_panel(
-        title = "Dimensão 5: Remuneração, Benefícios, Reconhecimento e Recompensas Não Pecuniárias",
-        value = "pfgp_5",
-        icon  = shiny::icon("chart-bar"),
-        bslib::card(
-          bslib::card_header(
-            class = "bg-primary text-white",
-            shiny::icon("chart-bar"),
-            " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
-          )#,
-          # bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
-        )
-      ),
+
+      # bslib::nav_panel(
+      #   title = "Dimensão 5: Remuneração, Benefícios, Reconhecimento e Recompensas Não Pecuniárias",
+      #   value = "pfgp_5",
+      #   icon  = shiny::icon("chart-bar"),
+      #   bslib::card(
+      #     bslib::card_header(
+      #       class = "bg-primary text-white",
+      #       shiny::icon("chart-bar"),
+      #       " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
+      #     )#,
+      #     # bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
+      #   )
+      # ),
 
       # ------------------------------------------------------------------.
       # Aba 6: ui, Dimensão 6 ------
       # ------------------------------------------------------------------.
-      bslib::nav_panel(
-        title = "Dimensão 6: Aposentação, Pensões e Desligamentos",
-        value = "pfgp_",
-        icon  = shiny::icon("chart-bar"),
-        bslib::card(
-          bslib::card_header(
-            class = "bg-primary text-white",
-            shiny::icon("chart-bar"),
-            " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
-          ),
-          bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
-        )
-      )
+
+      # bslib::nav_panel(
+      #   title = "Dimensão 6: Aposentação, Pensões e Desligamentos",
+      #   value = "pfgp_",
+      #   icon  = shiny::icon("chart-bar"),
+      #   bslib::card(
+      #     bslib::card_header(
+      #       class = "bg-primary text-white",
+      #       shiny::icon("chart-bar"),
+      #       " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
+      #     ),
+      #     bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
+      #   )
+      # )
     )
   )
 }
@@ -317,11 +343,146 @@ mod_pfgp_server <- function(id) {
     ##
     # > Carregamento de dados ----
     ##
-    dt_liderancas  <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
+    tab_cargo_transversal       <- readRDS(here::here('data-raw/data_pfgp/tab_cargo_transversal.rds'))
+    tab_ativo_transversal       <- readRDS(here::here('data-raw/data_pfgp/tab_ativo_transversal.rds'))
+    tab_raca_genero_transversal <- readRDS(here::here('data-raw/data_pfgp/tab_raca_genero_transversal.rds'))
+
+    ## limpeza inicial
+    tab_raca_genero_transversal <- dplyr::filter(tab_raca_genero_transversal,
+                                                 !no_cor_origem_etnica %in% c(NA),
+                                                 !grepl("N.O INFORMADO",no_cor_origem_etnica),
+                                                 N > 5)
+
+    ## definindo ordem de raça-cor
+    tab_raca_genero_transversal |>
+      dplyr::group_by(no_cor_origem_etnica) |>
+      dplyr::summarise(N = sum(N)) |>
+      dplyr::arrange(desc(N)) |>
+      dplyr::filter(N > 50) -> tot_raca
+
+
+    ## outras limpezas
+    tab_raca_genero_transversal <-
+      tab_raca_genero_transversal|>
+      dplyr::mutate(f_cor_origem_etnica = factor(no_cor_origem_etnica,
+                                                 levels = tot_raca$no_cor_origem_etnica,
+                                                 ordered = T),
+                    nm_transv = ifelse(transversal,
+                                       "Exercício Descentralizado",
+                                       "Exercício Não Descentralizado"),
+                    periodo = substr(compet,1,4) %>% as.numeric(),
+                    sexo = ifelse(co_sexo == "F","Mulheres","Homens"))
+
+    tab_raca_genero_transversal <- tab_raca_genero_transversal |>
+      dplyr::mutate(nm_transv_sexo = paste0(nm_transv,": ",sexo))
+
+
+
+    ##
+    # > Série anual: % cargos e servidores ativos com exercício descentralizado ----
+    ##
+    output$p_cargos_descent <- plotly::renderPlotly({
+
+      ## filtrando no órgão de interesse
+      ft_orgao <- "Total"
+      tab_filtro <- tab_cargo_transversal |>
+        dplyr::filter(sg_orgao == ft_orgao) |>
+        dplyr::mutate(p_cargo_transv = round(100*n_transversais/N,2),
+                      periodo = substr(compet,1,4) %>% as.numeric)
+
+      # plotando
+      tab_filtro %>%
+        ggplot_cat(aes(x = periodo,
+                       y = p_cargo_transv)) +
+        ylim(c(0,1.2*max(tab_filtro$p_cargo_transv))) +
+        geom_line(linewidth = 0.8) +
+        geom_point(size = 2) +
+        labs(colour = NULL,y = NULL,x = NULL) -> gr_cargos_descent
+
+      ggplotly_c(gr_cargos_descent)
+    })
+
+
+
+    ##
+    # > Série anual: % servidores em exercício descentralizado ----
+    ##
+    output$p_serv_descent <- plotly::renderPlotly({
+
+
+      # servidores ativos: filtrando no órgão de interesse
+      ft_orgao <- "Total"
+      tab_filtro <- dplyr::filter(tab_ativo_transversal,
+                                  sg_orgao == ft_orgao,
+                                  transversal) |>
+        dplyr::mutate(periodo = substr(compet,1,4) %>% as.numeric,
+                      p_serv_transv = round(100*N/N_total,2))
+
+      # plotando
+      tab_filtro %>%
+        ggplot_cat(aes(x = periodo,
+                       y = p_serv_transv,
+                       col = no_sit_serv)) +
+        ylim(c(0,1.2*max(tab_filtro$p_serv_transv))) +
+        geom_line(linewidth = 0.8) +
+        geom_point(size = 2) +
+        labs(colour = NULL,y = NULL,x = NULL) -> gr_serv_descent
+
+      ggplotly_c(gr_serv_descent)
+    })
+
+
+
+    ##
+    # > Série anual: Distribuição por raça e gênero, transversal X não transversal ----
+    ##
+    output$dist_racagen_descent <- plotly::renderPlotly({
+
+
+      # filtro do órgão
+      ft_orgao <- "Total"
+      if(ft_orgao != "Total"){
+        tab_filtro <- dplyr::filter(tab_raca_genero_transversal,sg_orgao == ft_orgao)
+      }else{
+        tab_filtro <- tab_raca_genero_transversal |>
+          dplyr::group_by(periodo,nm_transv,f_cor_origem_etnica,sexo,nm_transv_sexo) |>
+          dplyr::summarise(N = sum(N))
+      }
+
+      # filtrando e rearranjando variáveis
+      tab_filtro <- tab_filtro  |>
+        dplyr::filter(periodo > 2019)
+
+      # totais por mês e por transversal X não transversal
+      tab_filtro <-
+        tab_filtro |>
+        dplyr::group_by(periodo,nm_transv)  |>
+        dplyr::mutate(N_total = sum(N))|>
+        dplyr::ungroup() |>
+        dplyr::mutate(p_raca_genero = round(100*N/N_total,2))
 
 
 
 
+      # gráfico
+      tab_filtro %>%
+        ggplot_cat(
+          aes(x = periodo,
+              y = p_raca_genero,
+              col = f_cor_origem_etnica
+              )
+          ) +
+        geom_line(linewidth = 0.8) +
+        geom_point(size = 2) +
+        labs(col = NULL,
+             y = "Percentual de Raça e Gênero",
+             x = NULL) +
+        facet_wrap(nm_transv_sexo ~.) -> gr_racagenero_descent
+
+      ggplotly_c(gr_racagenero_descent)
+
+    })
   })
+
   }
 
