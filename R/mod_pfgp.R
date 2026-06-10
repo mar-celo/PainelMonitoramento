@@ -5,12 +5,49 @@
 #' @param id Internal parameter for {shiny}.
 #' @noRd
 #' @importFrom shiny NS tagList
+
+
+##
+# > sidebar Input ----
+##
+orgao_by <- bslib::sidebar(
+  shiny::selectInput("orgao_ref",
+                     "Órgão",
+                     choices  = c("Todos","MGI","MMA"),
+                     selected = "Todos"
+                     )
+  )
+
+
+##
+# > Organiza UI input
+##
 mod_pfgp_ui <- function(id) {
   ns <- NS(id)
   tagList(
+    bslib::card_header(
+      shiny::selectInput(
+        "orgao_ref",
+        "Órgão",
+        choices  = c("Todos","MGI","MMA"),
+        selected = "Todos"
+        )
+      ),
+
+    title = div(
+      style = "width:250px;",
+      selectInput(
+        "ano",
+        NULL,
+        choices = 2018:2024
+      )
+    ),
+
+
     bslib::navset_card_underline(
       id = ns("nav_pfgp"),
       selected = "pfgp_1",
+      sidebar = orgao_by,
 
       # ------------------------------------------------------------------.
       # Aba 1: UI, Dimensão 1 ------
@@ -20,15 +57,46 @@ mod_pfgp_ui <- function(id) {
         value = "pfgp_1",
         icon  = shiny::icon("users"),
         shiny::uiOutput(ns("kpi_boxes")),
-        bslib::card(
-          bslib::card_header(
-            class = "bg-primary text-white",
-            shiny::icon("chart-line"),
-            " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
-          )#,
-          # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
-        )
-      ),
+        bslib::layout_columns(
+          col_widths = c(3,9),
+          bslib::layout_columns(
+            col_widths = c(12,12,12),
+            # rol_heiths = c(.2,.2,.6),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-line"),
+                " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
+                )#,
+              # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
+              ),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-line"),
+                " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
+                )#,
+              # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
+              ),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-line"),
+                " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
+                )#,
+              # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
+              )
+            ),
+          bslib::card(
+            bslib::card_header(
+              class = "bg-primary text-white",
+              shiny::icon("chart-line"),
+              " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
+              )#,
+            # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
+            )
+          )
+        ),
 
       # ------------------------------------------------------------------.
       # Aba 2: UI, Dimensão 2 -----
@@ -101,8 +169,9 @@ mod_pfgp_ui <- function(id) {
         value = "pfgp_4",
         icon  = shiny::icon("chart-bar"),
         bslib::layout_columns(
-          col_widths = c(6,6),
+          col_widths = c(8,4),
           bslib::layout_columns(
+            col_widths = c(12,12),
             bslib::card(
               bslib::card_header(
                 class = "bg-primary text-white",
@@ -173,10 +242,15 @@ mod_pfgp_ui <- function(id) {
 }
 
 
-#' etnia_lideranca Server Functions
+#' pfgp Server Functions
 #'
 #' @param id Internal parameter for {shiny}.
 #' @noRd
+
+
+##
+# > Organiza UI input
+##
 mod_pfgp_server <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
 

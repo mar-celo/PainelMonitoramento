@@ -5,19 +5,19 @@ library(data.table)
 
 
 ### opções de tamanhos das figuras
-fw <- 9
-fh <- 6
+# fw <- 9
+# fh <- 6
 
-### opções de chunk
-knitr::opts_chunk$set(list(warning = FALSE,
-                           message = FALSE,
-                           error = FALSE,
-                           echo = FALSE,
-                           fig.width = fw,
-                           fig.height = fh,
-                           dev = c('png','svg')
-                           )
-                      )
+# ### opções de chunk
+# knitr::opts_chunk$set(list(warning = FALSE,
+#                            message = FALSE,
+#                            error = FALSE,
+#                            echo = FALSE,
+#                            fig.width = fw,
+#                            fig.height = fh,
+#                            dev = c('png','svg')
+#                            )
+#                       )
 
 
 
@@ -25,7 +25,7 @@ knitr::opts_chunk$set(list(warning = FALSE,
 txt_size <- 9
 
 ### opção de tamanho de texto no label (geom_text)
-txt_geom_size <- 5
+# txt_geom_size <- 5
 
 # paleta de cores para variáveis categóricas
 # plt_dn1i_cat <- "Paired"
