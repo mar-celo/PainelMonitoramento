@@ -10,14 +10,7 @@
 ##
 # > sidebar Input ----
 ##
-orgao_by <- bslib::sidebar(
-  shiny::selectInput("orgao_ref",
-                     "Órgão",
-                     choices  = c("Todos","MGI","MMA"),
-                     selected = "Todos"
-                     )
-  )
-
+load(file = "data-raw/data_pfgp.rda")
 
 ##
 # > Organiza UI input
@@ -25,29 +18,16 @@ orgao_by <- bslib::sidebar(
 mod_pfgp_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    bslib::card_header(
-      shiny::selectInput(
-        "orgao_ref",
-        "Órgão",
-        choices  = c("Todos","MGI","MMA"),
-        selected = "Todos"
-        )
-      ),
-
-    title = div(
-      style = "width:250px;",
-      selectInput(
-        "ano",
-        NULL,
-        choices = 2018:2024
-      )
-    ),
-
-
     bslib::navset_card_underline(
       id = ns("nav_pfgp"),
       selected = "pfgp_1",
-      sidebar = orgao_by,
+      sidebar = bslib::sidebar(
+        shiny::selectInput(ns("orgao_ref"),
+                           "Órgão",
+                           choices  = c("Total",lista_orgaos),
+                           selected = "Total"
+                           )
+        ),
 
       # ------------------------------------------------------------------.
       # Aba 1: UI, Dimensão 1 ------
@@ -249,7 +229,7 @@ mod_pfgp_ui <- function(id) {
 
 
 ##
-# > Organiza UI input
+# > Organiza SERVER output
 ##
 mod_pfgp_server <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
@@ -458,7 +438,9 @@ mod_pfgp_server <- function(id) {
     output$p_cargos_descent <- plotly::renderPlotly({
 
       ## filtrando no órgão de interesse
-      ft_orgao <- "Total"
+      req(input$orgao_ref)
+      ft_orgao <- as.character(input$orgao_ref)
+
       tab_filtro <- tab_cargo_transversal |>
         dplyr::filter(sg_orgao == ft_orgao) |>
         dplyr::mutate(p_cargo_transv = round(100*n_transversais/N,2),
@@ -485,7 +467,9 @@ mod_pfgp_server <- function(id) {
 
 
       # servidores ativos: filtrando no órgão de interesse
-      ft_orgao <- "Total"
+      req(input$orgao_ref)
+      ft_orgao <- as.character(input$orgao_ref)
+
       tab_filtro <- dplyr::filter(tab_ativo_transversal,
                                   sg_orgao == ft_orgao,
                                   transversal) |>
@@ -513,8 +497,10 @@ mod_pfgp_server <- function(id) {
     output$dist_racagen_descent <- plotly::renderPlotly({
 
 
-      # filtro do órgão
-      ft_orgao <- "Total"
+      ## filtrando no órgão de interesse
+      req(input$orgao_ref)
+      ft_orgao <- as.character(input$orgao_ref)
+
       if(ft_orgao != "Total"){
         tab_filtro <- dplyr::filter(tab_raca_genero_transversal,sg_orgao == ft_orgao)
       }else{

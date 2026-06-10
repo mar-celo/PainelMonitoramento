@@ -80,6 +80,10 @@ regioes_list <-
   rbindlist(idcol = "REGIAO_NATURALIDADE")
 
 
+# salvando lista de siglas de órgãos
+lista_orgaos <- transverais_ag_tab[,unique(sg_orgao)]
+save(lista_orgaos,file = "data-raw/data_pfgp.rda")
+
 # ==============================================================================.
 # Dimensão 3 -------
 # ==============================================================================.
