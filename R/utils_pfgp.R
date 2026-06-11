@@ -55,17 +55,18 @@ ggplot_cat <- function(...) {
 }
 
 # Converte ggplot para plotly limpando nomes duplicados na legenda
-ggplotly_c <- function(gg_obj) {
-  seen     <- c()
+ggplotly_c <- function(gg_obj){
+  seen <- c()
   ptly_obj <- plotly::ggplotly(gg_obj)
   ptly_obj$x$data <- lapply(ptly_obj$x$data, function(tr) {
-    nm <- gsub("^\\(|\\)$", "", tr$name)
-    nm <- gsub(",[0-9]$",   "", nm)
-    if (nm %in% seen) {
-      tr$showlegend <- FALSE
-    } else {
+    nm <- gsub("^\\(|\\)$","",tr$name)
+    nm <- gsub(",([0-9]|NA)", "", nm)
+
+    if(nm %in% seen){
+      tr$showlegend  <- FALSE
+    }else{
       tr$name <- nm
-      seen    <<- c(seen, tr$name)
+      seen <<- c(seen,tr$name)
     }
     tr
   })

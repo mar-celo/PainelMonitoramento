@@ -130,7 +130,7 @@ ggplotly_c <- function(gg_obj){
   ptly_obj <- plotly::ggplotly(gg_obj)
   ptly_obj$x$data <- lapply(ptly_obj$x$data, function(tr) {
     nm <- gsub("^\\(|\\)$","",tr$name)
-    nm <- gsub(",[0-9]$", "", nm)
+    nm <- gsub(",([0-9]|NA)", "", nm)
 
     if(nm %in% seen){
       tr$showlegend  <- FALSE

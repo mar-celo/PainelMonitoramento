@@ -18,6 +18,18 @@ load(file = "data-raw/data_pfgp.rda")
 mod_pfgp_ui <- function(id) {
   ns <- NS(id)
   tagList(
+
+
+
+    # title = div(
+    #   style = "width:250px;",
+    #   selectInput(
+    #     "ano",
+    #     choices = 2018:2024
+    #     )
+    #   ),
+
+
     bslib::navset_card_underline(
       id = ns("nav_pfgp"),
       selected = "pfgp_1",
