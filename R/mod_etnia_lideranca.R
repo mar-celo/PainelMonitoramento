@@ -90,18 +90,74 @@ mod_etnia_lideranca_ui <- function(id) {
         title = "Razão de Equidade",
         value = "equidade",
         icon  = shiny::icon("chart-bar"),
-        bslib::card(
-          bslib::card_header(
-            class = "bg-primary text-white",
-            shiny::icon("chart-bar"),
-            " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
+        bslib::layout_columns(
+          col_widths = c(3,9),
+          bslib::card(
+            bslib::card_header(
+              # "Texto Markdown",
+              class = "bg-primary text-white",
+              # Badge flutuante no canto superior esquerdo
+              tags$div(
+                # style = "position: absolute; top: -14px; left: 22px; display: flex; align-items: center; gap: 8px;",
+                tags$span(
+                  # style = paste0(
+                  #   "background: #FF7800; color: white; border-radius: 50%;",
+                  #   "width: 30px; height: 30px; display: inline-flex;",
+                  #   "align-items: center; justify-content: center;",
+                  #   "font-size: 13px; box-shadow: 0 2px 6px rgba(255,120,0,0.45);"
+                  #   ),
+                  shiny::icon("circle-info")
+                ),
+                tags$span(
+                  # style = paste0(
+                  #   "background: #FF7800; color: white; border-radius: 4px;",
+                  #   "padding: 2px 10px; font-size: 0.68rem; font-weight: 700;",
+                  #   "text-transform: uppercase; letter-spacing: 1px;",
+                  #   "box-shadow: 0 2px 6px rgba(255,120,0,0.35);"
+                  #   ),
+                  "Índice de equidade de acesso a cargos FCE"
+                )
+              )
+            ),
+            bslib::card_body(
+              # shiny::withMathJax(),
+              tags$div(
+                class = "p-3",
+                style = "font-size: 1.1rem;",
+                shiny::uiOutput(ns("texto_razao_equidade"))
+              )
+            )
           ),
-          bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
+          tags$div(
+            class = "d-flex flex-column gap-3 h-100",
+            bslib::card(
+              style = "flex: 6;",
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
+                ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("razao_equidade"), height = "420px")))
+              ),
+            bslib::card(
+              style = "flex: 4;",
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                " Razão de Equidade por Cor/Raça nos Cargos CCE/FCE"
+                ),
+              bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_equidade_orgao"))))
+              # bslib::layout_columns(
+              # col_widths = c(6,6),
+              # bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("tab_equidade_13a17"))))
+              # )
+              )
+            )
+          )
         )
       )
     )
-  )
-}
+  }
 
 
 #' etnia_lideranca Server Functions
@@ -119,6 +175,7 @@ mod_etnia_lideranca_server <- function(id) {
     Tab_sup      <- readRDS(here::here("data-raw/data_etnia/Tab_sup.rds"))
     Tab_ind3     <- readRDS(here::here("data-raw/data_etnia/Tab_ind3.rds"))
     Tab_eq_mes   <- readRDS(here::here("data-raw/data_etnia/Tab_inds_4_mes.rds"))
+    Tab_ind4_orgaos   <- readRDS(here::here("data-raw/data_etnia/Tab_inds_4_orgaos.rds"))
 
     # Normalizar nomes de colunas (remove acentuação para evitar problemas de encoding)
     names(Tab_vinc) <- iconv(names(Tab_vinc), "UTF-8", "ASCII//TRANSLIT")
@@ -198,49 +255,30 @@ mod_etnia_lideranca_server <- function(id) {
     # Série mensal % negros em CCE/FCE
     # ------------------------------------------------------------------
     output$serie_mensal <- plotly::renderPlotly({
-      dt_decreto <- 2023 + (3L - 1L) / 12   # marco/2023
 
-      cores <- c("Nível 1 a 12" = "#004587", "Nível 13 a 17" = "#1351b4")
+      dt_decreto <- zoo::as.yearmon("Mar 2023","%b %Y")
+      Tab_serie %>%
+        ggplot_cat(aes(x = anomes,
+                       y = p_negras,
+                       col = decreto_nivel)) +
+        geom_line() +
+        geom_point(size = 2.2,show.legend = F) +
+        # guides(color = guide_legend(override.aes = list(linetype = 0))) +
+        geom_vline(aes(xintercept = dt_decreto,
+                       linetype = "Decreto 11.443/2023")
+                   )+
+        geom_hline(aes(yintercept = 30,
+                       linetype = "Meta: 30%"),
+                   col = pal_primaria["principal"]
+                   ) +
+        scale_linetype_manual(
+          values = c( "Decreto 11.443/2023" = "dashed",
+                      "Meta: 30%" = 'solid')
+          ) +
+        # ylim(0,1.1*max(comissionados_negros_mes$p_negra)) +
+        labs(x = "",col = "",y = "",linetype = "") -> p_neg_mes
 
-      plotly::plot_ly(
-        Tab_serie,
-        x     = ~anomes,
-        y     = ~p_negras,
-        color = ~decreto_nivel,
-        colors = cores,
-        type  = "scatter",
-        mode  = "lines+markers",
-        text  = ~mes_ano_cargos,
-        hovertemplate = "<b>%{text}</b><br>%{y:.1f}%<extra></extra>",
-        marker = list(size = 5)
-      ) |>
-        plotly::add_segments(
-          inherit   = FALSE,
-          x         = dt_decreto, xend = dt_decreto,
-          y         = 0, yend = max(Tab_serie$p_negras, na.rm = TRUE) * 1.12,
-          line      = list(color = "#6c757d", dash = "dash", width = 1),
-          name      = "Decreto 11.443/2023",
-          showlegend = TRUE,
-          hoverinfo  = "none"
-        ) |>
-        plotly::add_segments(
-          inherit   = FALSE,
-          x         = min(Tab_serie$anomes),
-          xend      = max(Tab_serie$anomes),
-          y         = 30, yend = 30,
-          line      = list(color = "#dc3545", dash = "dot", width = 1.5),
-          name      = "Meta: 30%",
-          showlegend = TRUE,
-          hoverinfo  = "none"
-        ) |>
-        plotly::layout(
-          xaxis  = list(title = ""),
-          yaxis  = list(title = "% de Pessoas Negras", ticksuffix = "%"),
-          legend = list(orientation = "h", x = 0, y = -0.18),
-          hovermode     = "x unified",
-          paper_bgcolor = "#ffffff",
-          plot_bgcolor  = "#f8f9fa"
-        )
+      ggplotly_c(p_neg_mes)
     })
 
     # ------------------------------------------------------------------
@@ -268,7 +306,55 @@ mod_etnia_lideranca_server <- function(id) {
     # ------------------------------------------------------------------
     # Razão de equidade por cor/raça
     # ------------------------------------------------------------------
+
+    ### texto
+    output$texto_razao_equidade <- shiny::renderUI({
+      texto_md <-"
+
+* **Hipótese analítica:** na ausência de desigualdade racial no acesso a cargos de liderança, a proporção de negros em cargos FCE deveria ser equivalente à sua proporção entre os servidores efetivos ativos.
+
+* **Definição:** Razão entre o percentual de pessoas negras em cargos de liderança (FCE) e o percentual de pessoas negras no conjunto de servidores efetivos ativos.
+
+* **Fórmula conceitual:** RE = $$\\frac{\\text{% negros em cargos FCE}}{\\text{% negros no quadro efetivo ativo}}$$
+
+* **Interpretação:**
+    * $= 1$ → Equidade na ocupação dos cargos
+    * $< 1$ → Sub-representação de pessoas negras na liderança
+    * $> 1$ → Sobre-representação
+"
+
+      texto_html <- "
+
+      <ul>
+      <li><strong>Hipótese analítica:</strong> na ausência de desigualdade racial no acesso a cargos de liderança, a proporção de negros em cargos FCE deveria ser equivalente à sua proporção entre os servidores efetivos ativos.</li>
+      <br>
+      <li><strong>Definição:</strong> Razão entre o percentual de pessoas negras em cargos de liderança (FCE) e o percentual de pessoas negras no conjunto de servidores efetivos ativos.</li>
+      <br>
+      <li><strong>Fórmula conceitual:</strong>
+        $$\\frac{\\text{% negros em cargos FCE}}{\\text{% negros no quadro efetivo ativo}}$$
+      </li>
+      <br>
+      <li><strong>Interpretação:</strong>
+        <ul>
+          <li>\\( = 1 \\) &rarr; Equidade na ocupação dos cargos</li>
+          <li>\\( < 1 \\) &rarr; Sub-representação de pessoas negras na liderança</li>
+          <li>\\( > 1 \\) &rarr; Sobre-representação</li>
+        </ul>
+      </li>
+    </ul>
+
+      "
+      shiny::withMathJax(
+        # shiny::markdown(texto_md)
+        shiny::HTML(texto_html)
+      )
+
+    })
+
+    ### Gráfico
     output$razao_equidade <- plotly::renderPlotly({
+
+      ## melt na base
       df_long <- Tab_eq_mes |>
         tidyr::pivot_longer(
           cols      = c(ind4_1_a_12, ind4_13_a_17),
@@ -277,62 +363,125 @@ mod_etnia_lideranca_server <- function(id) {
         ) |>
         dplyr::mutate(
           nivel_label = dplyr::case_when(
-            nivel_cod == "ind4_1_a_12"   ~ "Nível 1 a 12",
-            nivel_cod == "ind4_13_a_17"  ~ "Nível 13 a 17"
+            nivel_cod == "ind4_1_a_12"   ~ "Níveis 1 a 12",
+            nivel_cod == "ind4_13_a_17"  ~ "Níveis 13 a 17"
           ),
           serie = paste(nome_cor_origem_etnica, nivel_label)
         )
 
-      cores_etnia <- c(
-        "NEGRAS" = "#004587",  "BRANCA"   = "#6c757d",
-        "AMARELA" = "#d4a017", "INDIGENA" = "#FF7800",
-        "PARDA"   = "#8b4513", "PRETA"    = "#343a40"
+      # gráfico em ggplot
+
+      df_long |>
+        filter(nome_cor_origem_etnica %in%
+                 c("BRANCA","PRETA","PARDA","Negras")) |>
+        ggplot_cat(aes(x = anomes,y = razao,col = nome_cor_origem_etnica)) +
+        geom_line() +
+        geom_point(size = 2.2) +
+        geom_hline(yintercept = 1,linetype = 2) +
+        labs(x = "",col = "",y = "") +
+        facet_wrap(nivel_label ~.,nrow = 1) -> gf
+
+
+      ggplotly_c(gf)
+
+    })
+
+    # ------------------------------------------------------------------
+    # Razão de equidade por cor/raça: TABELAS
+    # ------------------------------------------------------------------
+    output$tab_equidade_orgao <- DT::renderDT({
+      # Criar a tabela usando datatable com as configurações personalizadas
+      configuracao <- list(
+        language = list(
+          infoFiltered = "(filtrado num total de _MAX_ registros)",
+          info = "Exibindo _START_ até _END_ de _TOTAL_ registros",
+          lengthMenu = "Mostrar _MENU_ registros por página",
+          search = "Pesquisar:",
+          paginate = list(
+            first = "Primeiro",
+            last = "Último",
+            `next` = "Próximo",
+            previous = "Anterior"),
+          aria = list(
+            sortAscending = ": ativar para classificar coluna em ordem crescente",
+            sortDescending = ": ativar para classificar coluna em ordem decrescente"
+          )
+        ),
+        dom = 'Bfrtip',
+        buttons = c('csv', 'excel', 'pdf', 'print')
+
       )
 
-      plotly::plot_ly(
-        df_long,
-        x         = ~anomes,
-        y         = ~razao,
-        color     = ~nome_cor_origem_etnica,
-        colors    = cores_etnia,
-        linetype  = ~nivel_label,
-        type      = "scatter",
-        mode      = "lines",
-        hovertemplate = "<b>%{text}</b><br>Razão: %{y:.2f}<extra></extra>",
-        text      = ~serie
-      ) |>
-        plotly::add_segments(
-          inherit    = FALSE,
-          x          = min(Tab_eq_mes$anomes),
-          xend       = max(Tab_eq_mes$anomes),
-          y          = 1, yend = 1,
-          line       = list(color = "#dc3545", dash = "dot", width = 1.5),
-          name       = "Paridade (= 1)",
-          showlegend = TRUE,
-          hoverinfo  = "none"
+
+      # tbela necessidade de vagas
+      lim1 <- Tab_ind4_orgaos |>
+        filter(is.finite(ind4_1_a_12),
+               nome_cor_origem_etnica == "Negras") |>
+        summarise(li = max(abs(ind4_1_a_12 - 1),na.rm = T)) %>%
+        .$li
+
+      lim2 <- Tab_ind4_orgaos |>
+        filter(is.finite(ind4_13_a_17),
+               nome_cor_origem_etnica == "Negras") |>
+        summarise(ls = max(abs(ind4_13_a_17 - 1),na.rm = T)) %>%
+        .$ls
+
+      lim <- max(lim1,lim2)
+
+      pal <- scales::col_numeric(
+        palette = c(pal_primaria['ponto'],"white",pal_primaria["principal"]),
+        domain = c(1 - lim, 1 + lim)
+      )
+
+      dom_ind4_12 <- Tab_ind4_orgaos$ind4_1_a_12
+      dom_ind4_17 <- Tab_ind4_orgaos$ind4_13_a_17
+
+      dt4 <-
+        Tab_ind4_orgaos |>
+        dplyr::arrange(desc(ind4_13_a_17)) |>
+        filter(nome_cor_origem_etnica == "Negras")|>
+        select(orgao_vinculado_cargos_e_funcoes,
+               qtde,
+               `Nivel 1 a 12`,
+               `Nivel 13 a 17`,
+               ind4_1_a_12,
+               ind4_13_a_17) |>
+        DT::datatable(#filter = "top",
+          #style = "bootstrap",
+          class = "compact",
+          width = "100%",
+          extensions = 'Buttons',
+          options = configuracao,
+          colnames =
+            c("Órgão",
+              "Percentual de Efetivos Negros",
+              "% de negros, nível 1 a 12",
+              "% de negros, nível 13 a 17",
+              "Razão equidade, nível 1 a 12",
+              "Razão equidade, nível 13 a 17")
         ) |>
-        plotly::layout(
-          xaxis  = list(title = ""),
-          yaxis  = list(
-            title    = "Razão de Equidade",
-            zeroline = FALSE
-          ),
-          legend = list(orientation = "h", x = 0, y = -0.25),
-          hovermode     = "x unified",
-          paper_bgcolor = "#ffffff",
-          plot_bgcolor  = "#f8f9fa",
-          annotations   = list(list(
-            x         = max(Tab_eq_mes$anomes),
-            y         = 1.02,
-            text      = "Paridade",
-            showarrow = FALSE,
-            xanchor   = "right",
-            font      = list(color = "#dc3545", size = 10)
-          ))
+        formatStyle(
+          "ind4_1_a_12",
+          background = styleEqual(dom_ind4_12,pal(dom_ind4_12)),
+          backgroundSize = '98% 88%',
+          backgroundRepeat = 'no-repeat',
+          backgroundPosition = 'center'
+        ) |>
+        formatStyle(
+          "ind4_13_a_17",
+          background = styleEqual(dom_ind4_17,pal(dom_ind4_17)),
+          backgroundSize = '98% 88%',
+          backgroundRepeat = 'no-repeat',
+          backgroundPosition = 'center'
         )
-    })
-  })
-}
+
+      # Sys.setlocale("LC_TIME", "pt_BR.ISO8859-1")
+      dt4
+      }
+    )
+  }
+  )
+  }
 
 
 # ------------------------------------------------------------------
