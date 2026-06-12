@@ -155,6 +155,35 @@ base_ingressos <- base_ingressos %>%
   summarise(total = sum(contador, na.rm = TRUE), .groups = 'drop') %>%
   filter(dt_ingresso >= 201600)
 
+base_ingressos <-
+  base_ingressos %>%
+  mutate(sexo = ifelse(co_sexo %in% "F",
+                       "Mulheres",
+                       "Homens"),
+         ano_ingresso = substr(dt_ingresso,1,4) %>% as.numeric
+  )
+
+
+# agregações mínimas para salvar
+base_ingressos <-
+  list(
+
+    base_ingressos %>%
+      setDT() %>%
+      .[,.(co_orgao = 0,
+           sg_orgao = "Total",
+           total = sum(total)),
+        .(ano_ingresso,no_cor_origem_etnica,sexo,no_regiao_naturalidade)
+      ],
+
+    base_ingressos %>%
+      setDT() %>%
+      .[,.(total = sum(total)),
+        .(co_orgao,sg_orgao,ano_ingresso,no_cor_origem_etnica,sexo,no_regiao_naturalidade)
+        ]
+  ) %>%
+  rbindlist(fill = T)
+
 saveRDS(base_ingressos,"data-raw/data_pfgp/base_ingressos.rds")
 
 

@@ -88,8 +88,18 @@ regioes_list <- list(
   ) %>%
   rbindlist(idcol = "regiao")
 
-tabela_censo <- left_join(base_censo,regioes_list,by = c("localidade" = "UF")) %>%
-  mutate(populacao_adj = ifelse(populacao == "-",0,populacao) %>% as.numeric)
+tabela_censo <- left_join(tabela_censo,regioes_list,by = c("localidade" = "UF")) %>
+  mutate(populacao_adj = ifelse(populacao == "-",0,populacao) %>% as.numeric,
+         no_cor_origem_etnica =
+           iconv(raca,"UTF-8","ASCII//TRANSLIT") %>%
+           toupper(),
+         no_regiao =
+           iconv(regiao,"UTF-8","ASCII//TRANSLIT") %>%
+           toupper() %>%
+           gsub("\\-","_",.)
+         ) %>%
+  # filter(nivel_instrucao %in% "Superior completo") %>%
+  setDT
 
 
 saveRDS(tabela_censo,"data-raw/data_pfgp/base_censo.rds")
