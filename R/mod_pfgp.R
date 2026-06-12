@@ -167,6 +167,14 @@ mod_pfgp_ui <- function(id) {
             bslib::card_header(
               class = "bg-primary text-white",
               shiny::icon("chart-line"),
+              "Evolução Mensal – % de Cargos CCE/FCE ocupados por pessoas negras"
+            ),
+            bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_lidera_negros"), height = "380px")))
+          ),
+          bslib::card(
+            bslib::card_header(
+              class = "bg-primary text-white",
+              shiny::icon("chart-line"),
               "Evolução Anual – % de Cargos CCE/FCE ocupados por mulheres"
             ),
             bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_lidera_mulheres"), height = "380px")))
@@ -280,7 +288,7 @@ mod_pfgp_ui <- function(id) {
 ##
 # > Organiza SERVER output
 ##
-mod_pfgp_server <- function(id) {
+mod_pfgp_server <- function(id,grafico_compartilhado) {
   shiny::moduleServer(id, function(input, output, session) {
 
     # -----------------------------------------------------------------.
@@ -294,6 +302,15 @@ mod_pfgp_server <- function(id) {
     df_liderancas  <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
 
 
+
+    ##
+    # > Série mensal % negros em CCE/FCE -----
+    ##
+
+    # Reaproveita o mesmo gráfico para mostrar na UI do Módulo B
+    output$serie_lidera_negros <- renderPlot({
+      grafico_compartilhado() # <--- Usa como se fosse um reativo local
+    })
 
     ##
     # > Série anual % mulheres em CCE/FCE -----
