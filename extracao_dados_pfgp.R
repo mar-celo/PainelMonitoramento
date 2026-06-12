@@ -153,7 +153,7 @@ base_ingressos <- base_ingressos %>%
   summarise(total = sum(contador, na.rm = TRUE), .groups = 'drop') %>%
   filter(dt_ingresso >= 201600)
 
-
+saveRDS(base_ingressos,"data-raw/data_pfgp/base_ingressos.rds")
 
 
 # ==============================================================================.
