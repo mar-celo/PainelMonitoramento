@@ -38,7 +38,21 @@ mod_pfgp_ui <- function(id) {
                            "Órgão",
                            choices  = c("Total",lista_orgaos),
                            selected = "Total"
-                           )
+                           ),
+
+        # ==================================================================
+        # INSERÇÃO DO CONDITIONAL PANEL AQUI (Dentro da Sidebar)
+        # ==================================================================
+        shiny::conditionalPanel(
+          # Condição em JavaScript adaptada para o ecossistema de módulos
+          condition = sprintf("input['%s'] == 'pfgp_1'", ns("nav_pfgp")),
+
+          # Insira aqui o input que só deve aparecer na aba 'pfgp_1'
+          shiny::selectInput(ns("filtro_extra_pfgp_1"),
+                             "Filtro Adicional (Apenas Aba 1)",
+                             choices  = c("Opção 1", "Opção 2")
+                             )
+          )
         ),
 
       # ------------------------------------------------------------------.
@@ -48,44 +62,67 @@ mod_pfgp_ui <- function(id) {
         title = "Dimensão 1: Dimensionamento\nda Força de Trabalho",
         value = "pfgp_1",
         icon  = shiny::icon("users"),
-        shiny::uiOutput(ns("kpi_boxes")),
+        # shiny::uiOutput(ns("kpi_boxes")),
         bslib::layout_columns(
           col_widths = c(3,9),
-          bslib::layout_columns(
-            col_widths = c(12,12,12),
-            # rol_heiths = c(.2,.2,.6),
-            bslib::card(
-              bslib::card_header(
-                class = "bg-primary text-white",
-                shiny::icon("chart-line"),
-                " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
-                )#,
-              # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
-              ),
-            bslib::card(
-              bslib::card_header(
-                class = "bg-primary text-white",
-                shiny::icon("chart-line"),
-                " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
-                )#,
-              # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
-              ),
-            bslib::card(
-              bslib::card_header(
-                class = "bg-primary text-white",
-                shiny::icon("chart-line"),
-                " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
-                )#,
-              # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
-              )
-            ),
           bslib::card(
             bslib::card_header(
+              # "Texto Markdown",
               class = "bg-primary text-white",
-              shiny::icon("chart-line"),
-              " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
-              )#,
-            # bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
+              # Badge no canto superior esquerdo
+              tags$div(
+                tags$span(
+                  shiny::icon("circle-info")
+                ),
+                tags$span(
+                  "Equidade de distribuição: servidores X distribuição demográfica na população"
+                  )
+                )
+              ),
+            bslib::card_body(
+              # shiny::withMathJax(),
+              tags$div(
+                class = "p-3",
+                style = "font-size: 1.1rem;",
+                shiny::uiOutput(ns("texto_razao_equidade"))
+                )
+              )
+            ),
+          bslib::layout_columns(
+            col_widths = c(12,12),
+            bslib::card(
+              # TÍTULO MACRO COMUM
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-line"),
+                "Análise de Equidade de Ingresso: Comparação População X APF"
+              ),
+              bslib::card_body(
+                bslib::layout_columns(
+                  col_widths = c(6, 6), # Divide o espaço ao meio
+
+                  # Lado Esquerdo: Baseline
+                  div(
+                    tags$h5("Linha de Base (2023)", class = "text-muted mb-3"),
+                    .spin(plotly::plotlyOutput(ns("eq_ingr_baseline"), height = "380px"))
+                  ),
+
+                  # Lado Direito: Situação Atual
+                  div(
+                    tags$h5("Situação Atual", class = "text-muted mb-3"),
+                    .spin(plotly::plotlyOutput(ns("eq_ingr_sit_atual"), height = "380px"))
+                  )
+                )
+              )
+            ),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-line"),
+                " Evolução Mensal – Equidade de acesso"
+              ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("eq_ingr_"), height = "380px")))
+              )
             )
           )
         ),
