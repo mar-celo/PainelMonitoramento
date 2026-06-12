@@ -25,7 +25,7 @@ mod_etnia_lideranca_ui <- function(id) {
           bslib::card_header(
             class = "bg-primary text-white",
             shiny::icon("chart-line"),
-            " Evolução Mensal – % de Pessoas Negras em Cargos CCE/FCE"
+            "Evolução Mensal – % de Cargos CCE/FCE ocupados por pessoas negras"
           ),
           bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_mensal"), height = "380px")))
         )
@@ -254,7 +254,8 @@ mod_etnia_lideranca_server <- function(id) {
     # ------------------------------------------------------------------
     # Série mensal % negros em CCE/FCE
     # ------------------------------------------------------------------
-    output$serie_mensal <- plotly::renderPlotly({
+    serie_negros_fce_cce <- reactive({
+
 
       dt_decreto <- zoo::as.yearmon("Mar 2023","%b %Y")
       Tab_serie %>%
@@ -266,20 +267,22 @@ mod_etnia_lideranca_server <- function(id) {
         # guides(color = guide_legend(override.aes = list(linetype = 0))) +
         geom_vline(aes(xintercept = dt_decreto,
                        linetype = "Decreto 11.443/2023")
-                   )+
+        )+
         geom_hline(aes(yintercept = 30,
                        linetype = "Meta: 30%"),
                    col = pal_primaria["principal"]
-                   ) +
+        ) +
         scale_linetype_manual(
           values = c( "Decreto 11.443/2023" = "dashed",
                       "Meta: 30%" = 'solid')
-          ) +
+        ) +
         # ylim(0,1.1*max(comissionados_negros_mes$p_negra)) +
         labs(x = "",col = "",y = "",linetype = "") -> p_neg_mes
 
       ggplotly_c(p_neg_mes)
+
     })
+    output$serie_mensal <- plotly::renderPlotly({serie_negros_fce_cce()})
 
     # ------------------------------------------------------------------
     # Tabela por órgão superior
@@ -479,9 +482,11 @@ mod_etnia_lideranca_server <- function(id) {
       dt4
       }
     )
-  }
+
+    return(serie_negros_fce_cce)
+    }
   )
-  }
+}
 
 
 # ------------------------------------------------------------------
