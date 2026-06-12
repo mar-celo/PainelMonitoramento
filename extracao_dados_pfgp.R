@@ -146,9 +146,11 @@ base_ingressos <- df_tabelao_202604 %>%
 
 
 base_ingressos <- base_ingressos %>%
-  select(no_natureza_juridica, no_cor_origem_etnica, co_sexo,
+  select(co_orgao,
+         sg_orgao,no_natureza_juridica, no_cor_origem_etnica, co_sexo,
          no_regiao_naturalidade, dt_ingresso, contador) %>%
-  group_by(no_natureza_juridica, no_cor_origem_etnica, co_sexo,
+  group_by(co_orgao,
+           sg_orgao,no_natureza_juridica, no_cor_origem_etnica, co_sexo,
            no_regiao_naturalidade, dt_ingresso) %>%
   summarise(total = sum(contador, na.rm = TRUE), .groups = 'drop') %>%
   filter(dt_ingresso >= 201600)

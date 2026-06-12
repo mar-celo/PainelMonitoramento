@@ -66,6 +66,32 @@ tabela_censo <- base_final %>%
          sexo != "Total",
          raca != "Total")
 
+
+# lista região
+regioes_list <- list(
+  Norte = data.table(UF = c(
+    "Amazonas", "Acre", "Amapá", "Pará", "Rondônia", "Roraima", "Tocantins"
+  )),
+  Nordeste = data.table(UF = c(
+    "Paraíba", "Rio Grande do Norte", "Bahia", "Ceará", "Pernambuco",
+    "Maranhão", "Piauí", "Sergipe", "Alagoas"
+  )),
+  Sul = data.table(UF = c(
+    "Paraná", "Santa Catarina", "Rio Grande do Sul"
+  )),
+  Sudeste = data.table(UF = c(
+    "Espírito Santo", "Minas Gerais", "Rio de Janeiro", "São Paulo"
+  )),
+  "Centro-Oeste" = data.table(UF = c(
+    "Distrito Federal", "Goiás", "Mato Grosso do Sul", "Mato Grosso"
+  ))
+  ) %>%
+  rbindlist(idcol = "regiao")
+
+tabela_censo <- left_join(base_censo,regioes_list,by = c("localidade" = "UF")) %>%
+  mutate(populacao_adj = ifelse(populacao == "-",0,populacao) %>% as.numeric)
+
+
 saveRDS(tabela_censo,"data-raw/data_pfgp/base_censo.rds")
 
 #write_xlsx(tabela_censo, "C:/Users/aline.ramos/Documents/tabela_censo.xlsx")
