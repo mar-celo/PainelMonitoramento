@@ -308,7 +308,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
     ##
 
     # Reaproveita o mesmo gráfico para mostrar na UI do Módulo B
-    output$serie_lidera_negros <- renderPlot({
+    output$serie_lidera_negros <-  plotly::renderPlotly({
       grafico_compartilhado() # <--- Usa como se fosse um reativo local
     })
 
