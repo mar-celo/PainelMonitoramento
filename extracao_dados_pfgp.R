@@ -136,6 +136,25 @@ df_tabelao_202604 <- fread(file.path(src_tabelao),
   )
 
 
+base_ingressos <- df_tabelao_202604 %>%
+  filter(dt_ocor_ingr_spub_serv != "") %>%
+  mutate(
+    dt_ingresso = format(as.Date(dt_ocor_ingr_spub_serv, "%d/%m/%Y"), "%Y%m"),
+    # Depois, cria o contador
+    contador = 1
+  )
+
+
+base_ingressos <- base_ingressos %>%
+  select(no_natureza_juridica, no_cor_origem_etnica, co_sexo,
+         no_regiao_naturalidade, dt_ingresso, contador) %>%
+  group_by(no_natureza_juridica, no_cor_origem_etnica, co_sexo,
+           no_regiao_naturalidade, dt_ingresso) %>%
+  summarise(total = sum(contador, na.rm = TRUE), .groups = 'drop') %>%
+  filter(dt_ingresso >= 201600)
+
+
+
 
 # ==============================================================================.
 # Dimensão 3 -------
