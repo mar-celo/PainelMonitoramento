@@ -85,6 +85,59 @@ lista_orgaos <- transverais_ag_tab[,unique(sg_orgao)]
 save(lista_orgaos,file = "data-raw/data_pfgp.rda")
 
 # ==============================================================================.
+# Dimensão 1 -------
+# ==============================================================================.
+
+
+
+###
+# 1.1 - Equidade de ingressos ----
+##
+
+
+library(data.table)
+library(dplyr)
+library(janitor)
+
+src_tabelao <- "Y:/Temp/VW001_TABELAO_SERV_202604.csv"
+
+colunas_tabelao <- fread(file.path(src_tabelao),nrows = 1) %>% names()
+
+colunas_filtro_pep <- c("CO_NATUREZA_JURIDICA",
+                        "CO_ORGAO",
+                        "SG_REGIME_JURIDICO",
+                        "REGIME_JUR_E_SIT",
+                        "VAR_0001_SITUACAO")
+
+agreg_min <- c("CO_ORGAO",
+               "SG_ORGAO",
+               "NO_ORGAO",
+               "NO_NATUREZA_JURIDICA",
+               'NO_COR_ORIGEM_ETNICA',
+               'CO_SEXO',
+               'NO_REGIAO_NATURALIDADE')
+
+df_tabelao_202604 <- fread(file.path(src_tabelao),
+                           select = c(colunas_filtro_pep,
+                                      agreg_min,
+                                      "DT_OCOR_INGR_SPUB_SERV") %>%
+                             unique) %>%
+  janitor::clean_names() %>%
+  filter(!co_natureza_juridica %in% c(10,5,6),
+         #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
+         co_orgao != 99072,
+         !sg_regime_juridico %in% c("RMI","ETE","ETG"),
+         !regime_jur_e_sit %in%
+           c(#"EST-18","EST-19",
+             "EST-41","EST-42","ANS-36","ANS-37"
+           ),
+         var_0001_situacao %in% 'ATIVO'#,
+         # var_0182_forca_trab %in% 1
+  )
+
+
+
+# ==============================================================================.
 # Dimensão 3 -------
 # ==============================================================================.
 
