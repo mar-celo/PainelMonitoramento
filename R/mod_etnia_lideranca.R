@@ -65,21 +65,60 @@ mod_etnia_lideranca_ui <- function(id) {
         value = "suficiencia",
         icon  = shiny::icon("balance-scale"),
         bslib::layout_columns(
-          col_widths = c(6, 6),
+          col_widths = c(3, 9),
           bslib::card(
             bslib::card_header(
+              # "Texto Markdown",
               class = "bg-primary text-white",
-              "Índice de Suficiência – Nível 1 a 12"
+              # Badge flutuante no canto superior esquerdo
+              tags$div(
+                # style = "position: absolute; top: -14px; left: 22px; display: flex; align-items: center; gap: 8px;",
+                tags$span(
+                  # style = paste0(
+                  #   "background: #FF7800; color: white; border-radius: 50%;",
+                  #   "width: 30px; height: 30px; display: inline-flex;",
+                  #   "align-items: center; justify-content: center;",
+                  #   "font-size: 13px; box-shadow: 0 2px 6px rgba(255,120,0,0.45);"
+                  #   ),
+                  shiny::icon("circle-info")
+                ),
+                tags$span(
+                  # style = paste0(
+                  #   "background: #FF7800; color: white; border-radius: 4px;",
+                  #   "padding: 2px 10px; font-size: 0.68rem; font-weight: 700;",
+                  #   "text-transform: uppercase; letter-spacing: 1px;",
+                  #   "box-shadow: 0 2px 6px rgba(255,120,0,0.35);"
+                  #   ),
+                  "Índice de suficiência de vagas em  cargos FCE"
+                )
+              )
             ),
-            bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("suf_1a12"))))
+            bslib::card_body(
+              # shiny::withMathJax(),
+              tags$div(
+                class = "p-3",
+                style = "font-size: 1.1rem;",
+                shiny::uiOutput(ns("texto_razao_suficiencia"))
+              )
+            )
           ),
-          bslib::card(
-            bslib::card_header(
-              class = "bg-primary text-white",
-              "Índice de Suficiência – Nível 13 a 17"
-            ),
-            bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("suf_13a17"))))
-          )
+          bslib::layout_columns(
+            col_widths = c(12, 12),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                "Índice de Suficiência – Nível 1 a 12"
+                ),
+              bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("suf_1a12"))))
+              ),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                "Índice de Suficiência – Nível 13 a 17"
+                ),
+              bslib::card_body(fill = FALSE, .spin(DT::DTOutput(ns("suf_13a17"))))
+              )
+            )
         )
       ),
 
@@ -303,6 +342,55 @@ mod_etnia_lideranca_server <- function(id) {
     # ------------------------------------------------------------------
     # Índice de suficiência de vagas
     # ------------------------------------------------------------------
+
+    ### texto
+    output$texto_razao_suficiencia <- shiny::renderUI({
+      texto_html <- "
+
+<ul>
+  <li><strong>Definição:</strong> Relação entre o total de cargos CCE/FCE disponíveis no órgão e o número de vagas que deveriam ser ocupadas por pessoas negras para cumprimento da meta.</li>
+</ul>
+
+<p>
+  O indicador 2 é calculado apenas para os órgãos que não atingiram a meta estabelecida no Decreto.
+  O indicador é baseado no número de nomeações adicionais que seriam necessárias para cumprir a meta do decreto, sem alterar a distribuição atual de cargos.
+  Em outras palavras, considerando \\( T \\) a quantidade de vínculos em cargos comissionados e \\( N \\) o total destes que se autodeclaram negros, o total de cargos adicionais, \\( A \\), necessários para cumprir a meta é definido de tal forma que:
+</p>
+
+$$100\\times \\frac{N + A}{T + A} \\geq 30$$
+
+<p>Assim, temos:</p>
+
+$$A \\geq \\frac{0.3T - N}{1-0.3}$$
+
+<p>
+  Além das vagas necessárias, o indicador 2 leva em conta o total de cargos disponíveis \\( D \\), definido como a diferença entre o total de cargos distribuídos para o órgão e o total de ocupados.
+</p>
+
+<ul>
+  <li><strong>Fórmula conceitual:</strong>
+    $$Indicador 2 = \\frac{D}{A}$$
+  </li>
+  <br>
+  <li><strong>Interpretação:</strong>
+    <ul>
+      <li>\\( = 1 \\) -> As vagas disponíveis são exatamente suficientes para atingir a meta</li>
+      <li>\\( < 1 \\) -> As vagas disponíveis são insuficientes para atingir a meta</li>
+      <li>\\( > 1 \\) -> As vagas disponíveis são mais do que suficientes para atingir a meta</li>
+    </ul>
+  </li>
+</ul>
+
+      "
+
+      shiny::withMathJax(
+        # shiny::markdown(texto_md)
+        shiny::HTML(texto_html)
+      )
+
+      })
+
+
     output$suf_1a12  <- DT::renderDT({ .dt_suficiencia(Tab_ind3, "Nível 1 a 12")  })
     output$suf_13a17 <- DT::renderDT({ .dt_suficiencia(Tab_ind3, "Nível 13 a 17") })
 
@@ -494,7 +582,10 @@ mod_etnia_lideranca_server <- function(id) {
 # ------------------------------------------------------------------
 
 # Monta DT para tabelas de órgão com color bar de percentuais
-.dt_orgao <- function(df, col_orgao) {
+.dt_orgao <- function(df, col_orgao) {# No seu server.R (ou no bloco correspondente do Shiny)
+
+  # 1. Busca das colunas (certifique-se de usar df() se for reativo!)
+  # Se 'df' for reativo, troque as duas linhas abaixo por df()
   col_n1 <- grep("^N.vel.1|^Nivel.1", names(df), value = TRUE)[1]
   col_n2 <- grep("^N.vel.13|^Nivel.13", names(df), value = TRUE)[1]
 
@@ -509,31 +600,39 @@ mod_etnia_lideranca_server <- function(id) {
     )
   )
 
-  DT::datatable(df, rownames = FALSE, class = "compact stripe hover",
-                options = dt_opts) |>
+  # 2. Renderização da Tabela
+  DT::datatable(df, rownames = FALSE, class = "row-border compact hover", options = dt_opts) |>
     DT::formatStyle(
       col_n1,
-      background           = DT::styleColorBar(c(0, 100), "#004587"),
-      backgroundSize       = "98% 50%",
-      backgroundRepeat     = "no-repeat",
-      backgroundPosition   = "center"
+      # JavaScript puro cuidando da cor e proporção da barra
+      background = DT::JS(
+        "isNaN(parseFloat(value)) ? '' : ",
+        "(parseFloat(value) < 30 ? ",
+        "'linear-gradient(90deg, #FF7800 ' + parseFloat(value) + '%, transparent ' + parseFloat(value) + '%)' : ",
+        "'linear-gradient(90deg, #00A100 ' + parseFloat(value) + '%, transparent ' + parseFloat(value) + '%)')"
+      ),
+      backgroundSize     = "98% 70%",
+      backgroundRepeat   = "no-repeat",
+      backgroundPosition = "center",
+      color              = "black",
+      fontWeight         = "bold",
+      textShadow         = "1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff"
     ) |>
     DT::formatStyle(
       col_n2,
-      background           = DT::styleColorBar(c(0, 100), "#1351b4"),
-      backgroundSize       = "98% 50%",
-      backgroundRepeat     = "no-repeat",
-      backgroundPosition   = "center"
-    ) |>
-    DT::formatStyle(
-      col_n1,
-      color = DT::styleInterval(30, c("#dc3545", "#155724"))
-    ) |>
-    DT::formatStyle(
-      col_n2,
-      color = DT::styleInterval(30, c("#dc3545", "#155724"))
-    )
-}
+      background = DT::JS(
+        "isNaN(parseFloat(value)) ? '' : ",
+        "(parseFloat(value) < 30 ? ",
+        "'linear-gradient(90deg, #FF7800 ' + parseFloat(value) + '%, transparent ' + parseFloat(value) + '%)' : ",
+        "'linear-gradient(90deg, #00A100 ' + parseFloat(value) + '%, transparent ' + parseFloat(value) + '%)')"
+      ),
+      backgroundSize     = "98% 70%",
+      backgroundRepeat   = "no-repeat",
+      backgroundPosition = "center",
+      color              = "black",
+      fontWeight         = "bold",
+      textShadow         = "1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff"
+    )}
 
 # Monta DT para tabela de suficiência de vagas filtrada por nível
 .dt_suficiencia <- function(df, nivel) {
@@ -561,29 +660,63 @@ mod_etnia_lideranca_server <- function(id) {
 
   rng <- range(df$indice_suficiencia, na.rm = TRUE)
 
+  dt_opts <-  list(
+    pageLength = 15,
+    scrollX    = TRUE,
+    order       = list(list(which(names(df_filt) == "Indice Suficiencia") - 1L, "desc")),
+    language   = list(
+      search   = "Pesquisar:",
+      paginate = list(`next` = "Próximo", previous = "Anterior")
+    )
+  )
+
+  # 1. Descobre o índice da coluna (0-indexed para o JavaScript do DataTables)
+  col_idx <- which(names(df_filt) == "Indice Suficiencia") - 1
+
+  # 2. Adiciona a regra da caixinha de texto (badge) nas opções da sua lista 'dt_opts'
+  dt_opts$columnDefs <- list(
+    list(
+      targets = col_idx,
+      render = DT::JS("
+      function(data, type, row) {
+        if (type === 'display') {
+          if (isNaN(data) || data === null || data === '') return '';
+
+          // Mesma regra de corte (valor 1) e cores da sua barra
+          var color = parseFloat(data) < 1 ? '#FF7800' : '#00A100';
+
+          // Arredonda para 2 casas decimais (substituindo o formatRound)
+          var formatted = parseFloat(data).toFixed(2);
+
+          // Retorna a caixinha de texto com fundo sólido e letra branca
+          return '<span style=\"background-color: ' + color + '; color: white; padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold; min-width: 50px; text-align: center;\">' + formatted + '</span>';
+        }
+        return data;
+      }
+    ")
+    )
+  )
+
   DT::datatable(
     df_filt,
     rownames = FALSE,
-    class    = "compact stripe hover",
-    options  = list(
-      pageLength = 15,
-      scrollX    = TRUE,
-      language   = list(
-        search   = "Pesquisar:",
-        paginate = list(`next` = "Próximo", previous = "Anterior")
-      )
-    )
-  ) |>
+    class    = "row-border compact hover",
+    options  = dt_opts
+    ) |>
     DT::formatStyle(
       "Indice Suficiencia",
-      background         = DT::styleColorBar(rng, "#004587"),
-      backgroundSize     = "98% 50%",
+      background = DT::JS(sprintf(
+      "(function(val) {
+      if (isNaN(val)) return '';
+      var min = %f;
+      var max = %f;
+      var pct = Math.min(100, Math.max(0, ((val - min) / (max - min)) * 100));
+      var color = val < 1 ? '#FF7800' : '#00A100';
+      return 'linear-gradient(90deg, ' + color + ' ' + pct + '%%, transparent ' + pct + '%%)';
+      })(parseFloat(value))",
+      rng[1], rng[2]
+      )),
+      backgroundSize     = "98% 70%",
       backgroundRepeat   = "no-repeat",
-      backgroundPosition = "center"
-    ) |>
-    DT::formatStyle(
-      "Indice Suficiencia",
-      color = DT::styleInterval(1, c("#dc3545", "#155724"))
-    ) |>
-    DT::formatRound("Indice Suficiencia", digits = 2)
-}
+      backgroundPosition = "center",)
+  }
