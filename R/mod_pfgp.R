@@ -127,12 +127,55 @@ mod_pfgp_ui <- function(id) {
           )
         ),
 
+
+
+      # ------------------------------------------------------------------.
+      # Aba 2: UI, Dimensão 2 -----
+      # ------------------------------------------------------------------.
+      bslib::nav_panel(
+        title = "Dimensão 2: Carreiras, Cargos, Progressão e Promoção",
+        value = "pfgp_2",
+        icon  = shiny::icon("chart-bar"),
+        bslib::layout_columns(
+          col_widths = c(8,4),
+          bslib::layout_columns(
+            col_widths = c(12,12),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                "Percentual de cargos com exercício descentralizado"
+              ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("p_cargos_descent"), height = "420px")))
+            ),
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                "Percentual de servidores ativos em exercício descentralizado"
+              ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("p_serv_descent"), height = "420px")))
+            )
+          ),
+          bslib::layout_columns(
+            bslib::card(
+              bslib::card_header(
+                class = "bg-primary text-white",
+                shiny::icon("chart-bar"),
+                "Distribuição por raça e gênero, exercícios descentralizados X não descentralizados"
+              ),
+              bslib::card_body(.spin(plotly::plotlyOutput(ns("dist_racagen_descent"), height = "420px")))
+            )
+          )
+        )
+      ),
+
       # ------------------------------------------------------------------.
       # Aba 2: UI, Dimensão 2 -----
       # ------------------------------------------------------------------.
 
       # bslib::nav_panel(
-      #   title = "Dimensão 2: Alocação, Ambientação, Estágio Probatório e Bem-Estar",
+      #   title = "Dimensão 2: Carreiras, Cargos, Progressão e Promoção",
       #   value = "pfgp_2",
       #   icon  = shiny::icon("building"),
       #   bslib::layout_columns(
@@ -155,11 +198,11 @@ mod_pfgp_ui <- function(id) {
       # ),
 
       # ------------------------------------------------------------------.
-      # Aba 3: UI, Dimensão 3 ------
+      # Aba 4: UI, Dimensão 4 ------
       # ------------------------------------------------------------------.
       bslib::nav_panel(
-        title = "Dimensão 3: Desenvolvimento e Desempenho de Pessoas e Formação de Lideranças Públicas",
-        value = "pfgp_3",
+        title = "Dimensão 4: Desenvolvimento e Desempenho de Pessoas e Formação de Lideranças Públicas",
+        value = "pfgp_4",
         icon  = shiny::icon("balance-scale"),
         bslib::layout_columns(
           col_widths = c(6, 6),
@@ -194,47 +237,6 @@ mod_pfgp_ui <- function(id) {
               "Evolução Anual – % de servidores em Cargos CCE/FCE por origem territorial"
               ),
             bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_lidera_origem"), height = "380px")))
-            )
-          )
-        ),
-
-      # ------------------------------------------------------------------.
-      # Aba 4: UI, Dimensão 4 -----
-      # ------------------------------------------------------------------.
-      bslib::nav_panel(
-        title = "Dimensão 4: Carreiras, Cargos, Progressão e Promoção",
-        value = "pfgp_4",
-        icon  = shiny::icon("chart-bar"),
-        bslib::layout_columns(
-          col_widths = c(8,4),
-          bslib::layout_columns(
-            col_widths = c(12,12),
-            bslib::card(
-              bslib::card_header(
-                class = "bg-primary text-white",
-                shiny::icon("chart-bar"),
-                "Percentual de cargos com exercício descentralizado"
-              ),
-              bslib::card_body(.spin(plotly::plotlyOutput(ns("p_cargos_descent"), height = "420px")))
-            ),
-            bslib::card(
-              bslib::card_header(
-                class = "bg-primary text-white",
-                shiny::icon("chart-bar"),
-                "Percentual de servidores ativos em exercício descentralizado"
-              ),
-              bslib::card_body(.spin(plotly::plotlyOutput(ns("p_serv_descent"), height = "420px")))
-            )
-          ),
-          bslib::layout_columns(
-            bslib::card(
-              bslib::card_header(
-                class = "bg-primary text-white",
-                shiny::icon("chart-bar"),
-                "Distribuição por raça e gênero, exercícios descentralizados X não descentralizados"
-              ),
-              bslib::card_body(.spin(plotly::plotlyOutput(ns("dist_racagen_descent"), height = "420px")))
-            )
             )
           )
         )#,
@@ -573,7 +575,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
     })
 
     # -----------------------------------------------------------------.
-    # Dimensão 3, server  ------
+    # Dimensão 4, server  ------
     # -----------------------------------------------------------------.
 
 
@@ -737,7 +739,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
     })
 
     # -----------------------------------------------------------------.
-    # Dimensão 4, server  ------
+    # Dimensão 2, server  ------
     # -----------------------------------------------------------------.
 
 
