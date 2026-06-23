@@ -6,7 +6,7 @@
 
 # Paletas de cores
 .pal_primaria <- c(
-  "#0000AA",
+  azul = "#0000AA",
   ponto     = "#FF7800",
   principal = "#00A100"
 )
@@ -15,6 +15,7 @@
   .pal_primaria,
   "#FFCE08", "#EE3A79", "#37C2D5", "#C13C01", "#9B83D9"
 )
+
 
 # Scales ggplot2
 .plot_fill_cat   <- ggplot2::scale_fill_manual(values = unname(.pal_complementar))

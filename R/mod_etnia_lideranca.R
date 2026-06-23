@@ -509,13 +509,13 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
         dplyr::filter(is.finite(ind4_1_a_12),
                nome_cor_origem_etnica == "Negras") |>
         dplyr::summarise(li = max(abs(ind4_1_a_12 - 1),na.rm = T)) |>
-        .$li
+        dplyr::select(li)
 
       lim2 <- Tab_ind4_orgaos |>
         dplyr::filter(is.finite(ind4_13_a_17),
                nome_cor_origem_etnica == "Negras") |>
         dplyr::summarise(ls = max(abs(ind4_13_a_17 - 1),na.rm = T)) |>
-        .$ls
+        dplyr::select(ls)
 
       lim <- max(lim1,lim2)
 
