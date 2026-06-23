@@ -297,7 +297,7 @@ mod_etnia_lideranca_server <- function(id) {
 
 
       dt_decreto <- zoo::as.yearmon("Mar 2023","%b %Y")
-      Tab_serie %>%
+      Tab_serie |>
         ggplot_cat(aes(x = anomes,
                        y = p_negras,
                        col = decreto_nivel)) +
@@ -463,7 +463,7 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
       # gráfico em ggplot
 
       df_long |>
-        filter(nome_cor_origem_etnica %in%
+        dplyr::filter(nome_cor_origem_etnica %in%
                  c("BRANCA","PRETA","PARDA","Negras")) |>
         ggplot_cat(aes(x = anomes,y = razao,col = nome_cor_origem_etnica)) +
         geom_line() +
@@ -506,15 +506,15 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
 
       # tbela necessidade de vagas
       lim1 <- Tab_ind4_orgaos |>
-        filter(is.finite(ind4_1_a_12),
+        dplyr::filter(is.finite(ind4_1_a_12),
                nome_cor_origem_etnica == "Negras") |>
-        summarise(li = max(abs(ind4_1_a_12 - 1),na.rm = T)) %>%
+        dplyr::summarise(li = max(abs(ind4_1_a_12 - 1),na.rm = T)) |>
         .$li
 
       lim2 <- Tab_ind4_orgaos |>
-        filter(is.finite(ind4_13_a_17),
+        dplyr::filter(is.finite(ind4_13_a_17),
                nome_cor_origem_etnica == "Negras") |>
-        summarise(ls = max(abs(ind4_13_a_17 - 1),na.rm = T)) %>%
+        dplyr::summarise(ls = max(abs(ind4_13_a_17 - 1),na.rm = T)) |>
         .$ls
 
       lim <- max(lim1,lim2)
@@ -530,13 +530,13 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
       dt4 <-
         Tab_ind4_orgaos |>
         dplyr::arrange(desc(ind4_13_a_17)) |>
-        filter(nome_cor_origem_etnica == "Negras")|>
-        select(orgao_vinculado_cargos_e_funcoes,
-               qtde,
-               `Nivel 1 a 12`,
-               `Nivel 13 a 17`,
-               ind4_1_a_12,
-               ind4_13_a_17) |>
+        dplyr::filter(nome_cor_origem_etnica == "Negras")|>
+        dplyr::select(orgao_vinculado_cargos_e_funcoes,
+                      qtde,
+                      `Nivel 1 a 12`,
+                      `Nivel 13 a 17`,
+                      ind4_1_a_12,
+                      ind4_13_a_17) |>
         DT::datatable(#filter = "top",
           #style = "bootstrap",
           class = "compact",
@@ -551,14 +551,14 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
               "Razão equidade, nível 1 a 12",
               "Razão equidade, nível 13 a 17")
         ) |>
-        formatStyle(
+        DT::formatStyle(
           "ind4_1_a_12",
           background = styleEqual(dom_ind4_12,pal(dom_ind4_12)),
           backgroundSize = '98% 88%',
           backgroundRepeat = 'no-repeat',
           backgroundPosition = 'center'
         ) |>
-        formatStyle(
+        DT::formatStyle(
           "ind4_13_a_17",
           background = styleEqual(dom_ind4_17,pal(dom_ind4_17)),
           backgroundSize = '98% 88%',

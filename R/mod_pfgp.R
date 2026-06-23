@@ -310,9 +310,9 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
 
     base_censo_melt <-
       base_censo  |>
-      filter(!faixa_etaria %in% c("75 a 79 anos",
-                                  "80 anos ou mais"),
-             nivel_instrucao %in% "Superior completo") |>
+      dplyr::filter(!faixa_etaria %in% c("75 a 79 anos",
+                                         "80 anos ou mais"),
+                    nivel_instrucao %in% "Superior completo") |>
       data.table::melt(
         measure.vars = c("sexo","no_cor_origem_etnica","no_regiao"),
         variable.name = "fator",
@@ -454,7 +454,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
           names_to = "universo",                             # Nome da nova coluna de texto (variable.name)
           values_to = "p_categ"                              # Nome da nova coluna de valores (value.name)
         ) |>
-        mutate(
+        dplyr::mutate(
           p_categ = ifelse(universo == "p_categoria_censo",-p_categ,p_categ) |> round(1),
           universo = gsub("p_categoria_","",universo)
         ) -> tab_filtro
@@ -508,7 +508,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
           names_to = "universo",                             # Nome da nova coluna de texto (variable.name)
           values_to = "p_categ"                              # Nome da nova coluna de valores (value.name)
         ) |>
-        mutate(
+        dplyr::mutate(
           p_categ = ifelse(universo == "p_categoria_censo",-p_categ,p_categ) |> round(1),
           universo = gsub("p_categoria_","",universo)
         ) -> tab_filtro
@@ -771,7 +771,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
                     nm_transv = ifelse(transversal,
                                        "Exercício Descentralizado",
                                        "Exercício Não Descentralizado"),
-                    periodo = substr(compet,1,4) %>% as.numeric(),
+                    periodo = substr(compet,1,4) |> as.numeric(),
                     sexo = ifelse(co_sexo == "F","Mulheres","Homens"))
 
     tab_raca_genero_transversal <- tab_raca_genero_transversal |>
@@ -791,10 +791,10 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
       tab_filtro <- tab_cargo_transversal |>
         dplyr::filter(sg_orgao == ft_orgao) |>
         dplyr::mutate(p_cargo_transv = round(100*n_transversais/N,2),
-                      periodo = substr(compet,1,4) %>% as.numeric)
+                      periodo = substr(compet,1,4) |> as.numeric())
 
       # plotando
-      tab_filtro %>%
+      tab_filtro |>
         ggplot_cat(aes(x = periodo,
                        y = p_cargo_transv)) +
         ylim(c(0,1.2*max(tab_filtro$p_cargo_transv))) +
@@ -820,11 +820,11 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
       tab_filtro <- dplyr::filter(tab_ativo_transversal,
                                   sg_orgao == ft_orgao,
                                   transversal) |>
-        dplyr::mutate(periodo = substr(compet,1,4) %>% as.numeric,
+        dplyr::mutate(periodo = substr(compet,1,4) |> as.numeric(),
                       p_serv_transv = round(100*N/N_total,2))
 
       # plotando
-      tab_filtro %>%
+      tab_filtro |>
         ggplot_cat(aes(x = periodo,
                        y = p_serv_transv,
                        col = no_sit_serv)) +
@@ -872,7 +872,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
 
 
       # gráfico
-      tab_filtro %>%
+      tab_filtro |>
         ggplot_cat(
           aes(x = periodo,
               y = p_raca_genero,
