@@ -564,7 +564,7 @@ mod_pfgp_server <- function(id,grafico_compartilhado) {
           )
         ) +
         geom_line(linewidth = 0.8) +
-        geom_hline(yintercept = 1,size = 1) +
+        geom_hline(yintercept = 1, linewidth = 1) +
         geom_point(size = 2)+
         labs(x = NULL,
              y = NULL,

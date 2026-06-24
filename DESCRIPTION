@@ -23,7 +23,7 @@ Imports:
     htmltools,
     lubridate,
     pkgload,
-    plotly,
+    plotly (>= 4.12.0),
     reactable,
     scales,
     sf,

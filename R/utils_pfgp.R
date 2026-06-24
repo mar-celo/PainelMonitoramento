@@ -50,8 +50,6 @@
 # ggplot com tema Gov.br — sem scales manuais para compatibilidade com ggplotly()
 ggplot_cat <- function(...) {
   ggplot2::ggplot(...) +
-    .plot_fill_cat +
-    .plot_color_cat +
     .plot_config
 }
 
@@ -60,8 +58,10 @@ ggplotly_c <- function(gg_obj){
   seen <- c()
   ptly_obj <- plotly::ggplotly(gg_obj)
   ptly_obj$x$data <- lapply(ptly_obj$x$data, function(tr) {
+    if (is.null(tr$name)) return(tr)
     nm <- gsub("^\\(|\\)$","",tr$name)
     nm <- gsub(",([0-9]|NA)", "", nm)
+    if (length(nm) == 0L) return(tr)
 
     if(nm %in% seen){
       tr$showlegend  <- FALSE
