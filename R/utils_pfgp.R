@@ -49,7 +49,9 @@
 
 # ggplot com tema Gov.br — sem scales manuais para compatibilidade com ggplotly()
 ggplot_cat <- function(...) {
-  ggplot2::ggplot(...) +
+  ggplot2::ggplot(...)+
+    .plot_fill_cat +
+    .plot_color_cat  +
     .plot_config
 }
 
