@@ -158,3 +158,55 @@ pfgp_vozes_itens <- left_join(pfgp_vozes_itens,
 
 
 
+### Vozes 1
+colsby <- c("co_sexo",
+            "co_pgd",
+            "co_cor_origem_etnica",
+            "co_geracao...11")
+
+
+etl_vozes1 <-
+  data_vozes1 %>%
+  melt(id.vars = c(colsby),
+       measure.vars = pfgp_vozes_itens$cod_item_vozes1 %>% na.omit(),
+       variable.name = "cod_item",
+       value.name = "opcao",
+       na.rm = T) %>%
+  .[,.(.N),
+    by = c(colsby,"cod_item","opcao")] %>%
+  .[,cod_questao := str_extract_all(cod_item,"^q[0-9]{1,2}") %>% unlist]
+
+
+
+
+### Vozes 2
+colsby <- c("CO_SEXO",
+            "in_pgd",
+            "NO_COR_ORIGEM_ETNICA",
+            "geracao")
+
+
+etl_vozes2 <-
+  data_vozes2 %>%
+  melt(id.vars = c(colsby),
+       measure.vars = pfgp_vozes_itens$cod_item_vozes2 %>% na.omit(),
+       variable.name = "cod_item",
+       value.name = "opcao",
+       na.rm = T) %>%
+  .[,.(.N),
+    by = c(colsby,"cod_item","opcao")] %>%
+  .[,cod_questao := str_extract_all(cod_item,"^q[0-9]{1,2}") %>% unlist]
+
+
+# ==============================================================================.
+# E. SALVANDO ETL E DICIONÁRIOS -------
+# ==============================================================================.
+
+saveRDS(etl_vozes1,
+        "data-raw/data_pfgp/etl_vozes1.rds")
+
+saveRDS(etl_vozes2,
+        "data-raw/data_pfgp/etl_vozes2.rds")
+
+saveRDS(pfgp_vozes_itens,
+        "data-raw/data_pfgp/pfgp_vozes_itens.rds")
