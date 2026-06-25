@@ -4,6 +4,9 @@
 # Extraído de data/setup_rmd.R para disponibilização no pacote
 # ==============================================================================
 
+### opções de tamanhos de texto dos itens (eixo, legendas, etc)
+txt_size <- 9
+
 # Paletas de cores
 .pal_primaria <- c(
   azul = "#0000AA",
@@ -75,3 +78,23 @@ ggplotly_c <- function(gg_obj){
   })
   ptly_obj
 }
+
+
+
+# 'NOVO' ggplot para escala de cores contínuoas
+.likert_values <- c("Discordo totalmente" = "#CA0020",
+                    "Discordo" = "#F4A582",
+                    "Não concordo nem discordo" =  "#F7F7F7",
+                    "Concordo" = "#92C5DE",
+                    "Concordo totalmente" = "#0571B0")
+
+
+ggplot_likert <- function(...){
+  ggplot2::ggplot(...) +
+    # scale_fill_brewer(palette = "RdBu") +
+    # scale_color_brewer(palette = "RdBu")+
+    scale_fill_manual(values = .likert_values) +
+    .plot_config
+}
+
+

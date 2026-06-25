@@ -309,7 +309,7 @@ mod_etnia_lideranca_server <- function(id) {
         )+
         geom_hline(aes(yintercept = 30,
                        linetype = "Meta: 30%"),
-                   col = pal_primaria["principal"]
+                   col = .pal_primaria["principal"]
         ) +
         scale_linetype_manual(
           values = c( "Decreto 11.443/2023" = "dashed",
@@ -530,7 +530,7 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
       lim <- max(lim1,lim2)
 
       pal <- scales::col_numeric(
-        palette = c(pal_primaria['ponto'],"white",pal_primaria["principal"]),
+        palette = c(.pal_primaria['ponto'],"white",.pal_primaria["principal"]),
         domain = c(1 - lim, 1 + lim)
       )
 
