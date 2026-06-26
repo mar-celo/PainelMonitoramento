@@ -126,7 +126,7 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
           c(colsby)
           )
         ),
-      cod_item,opcao,opcao.f) |>
+      cod_item,item.q2,opcao,opcao.f) |>
     dplyr::summarise(N = sum(N)) |>
     dplyr::ungroup() |>
     dplyr::group_by(
@@ -151,6 +151,7 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     # setando nomes das colunas em 'colsby'
     if(!is.null(colsby)){
       setnames(etl_filter,colsby,'colsby')
+      etl_filter <- dplyr::filter(etl_filter,!colsby %in% c(NA,""))
       etl_filter <- dplyr::mutate(etl_filter,opcao.f = as.character(colsby))
     }else{
       etl_filter <- dplyr::mutate(etl_filter,opcao.f = 'Concordância')
@@ -160,7 +161,7 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     etl_filter <-
       etl_filter |>
       dplyr::filter(opcao %in% c(4,5)) |>
-      dplyr::group_by(opcao.f,cod_item) |>
+      dplyr::group_by(opcao.f,cod_item,item.q2) |>
       dplyr::summarise(N = sum(N),
                        p = sum(p)) |>
       dplyr::ungroup()
@@ -170,9 +171,10 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     p_base <-
       # iniciando ggplot
       etl_filter |>
-      ggplot_cat(aes(x = cod_item,
+      ggplot_cat(aes(x = item.q2,
                      fill = opcao.f,
                      y = p))
+
 
 
   }else{
@@ -187,7 +189,7 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     p_base <-
       # iniciando ggplot
       etl_filter |>
-      ggplot_likert(aes(x = cod_item,
+      ggplot_likert(aes(x = item.q2,
                         fill = opcao.f,
                         y = p))
 
