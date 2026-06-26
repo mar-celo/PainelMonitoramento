@@ -29,3 +29,4 @@ etl_vozes2 <-
 
 usethis::use_data(etl_vozes1, overwrite = TRUE)
 usethis::use_data(etl_vozes2, overwrite = TRUE)
+usethis::use_data(pfgp_vozes_itens,overwrite = TRUE)
