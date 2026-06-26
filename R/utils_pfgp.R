@@ -110,10 +110,6 @@ labels_y  <- paste0(quebras_y,"%")
 
 
 
-# filtrando itens do indicador
-list_itens <-
-  pfgp_vozes_itens |>
-  filter(id_indicador == q)
 
 # função para criar gráfico de respostas ao item
 likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
@@ -149,24 +145,35 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     posicao_barras <- position_dodge()
 
     # define a posição das labels a depender da concordancia e colsby
-    posicao_texto <- position_dodge2(reverse = T,padding = 0.5)
+    posicao_texto <- position_dodge(width = 0.9)
+
+
+    # setando nomes das colunas em 'colsby'
+    if(!is.null(colsby)){
+      setnames(etl_filter,colsby,'colsby')
+      etl_filter <- dplyr::mutate(etl_filter,opcao.f = as.character(colsby))
+    }else{
+      etl_filter <- dplyr::mutate(etl_filter,opcao.f = 'Concordância')
+    }
 
     #  novo agrupamento
     etl_filter <-
       etl_filter |>
       dplyr::filter(opcao %in% c(4,5)) |>
-      dplyr::group_by(
-        across(
-          all_of(
-            c(colsby)
-          )
-        ),
-        cod_item
-        ) |>
+      dplyr::group_by(opcao.f,cod_item) |>
       dplyr::summarise(N = sum(N),
                        p = sum(p)) |>
-      dplyr::ungroup() |>
-      dplyr::mutate(opcao.f = ifelse(!is.null(colsby),as.character(get(colsby)),'Concordância'))
+      dplyr::ungroup()
+
+
+    # plot base
+    p_base <-
+      # iniciando ggplot
+      etl_filter |>
+      ggplot_cat(aes(x = cod_item,
+                     fill = opcao.f,
+                     y = p))
+
 
   }else{
 
@@ -176,13 +183,17 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     # define a posição das labels a depender da concordancia e colsby
     posicao_texto <- position_stack(reverse = T,vjust = 0.5)
 
+    # plot base
+    p_base <-
+      # iniciando ggplot
+      etl_filter |>
+      ggplot_likert(aes(x = cod_item,
+                        fill = opcao.f,
+                        y = p))
+
   }
 
-  # iniciando ggplot
-  etl_filter |>
-    ggplot_likert(aes(x = cod_item,
-                      fill = opcao.f,
-                      y = p)) +
+  p_base +
 
     # criando colunas empilhadas
     geom_col(position = posicao_barras) +
@@ -196,7 +207,8 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
         ),
         group = opcao.f
       ),
-      position = posicao_texto
+      position = posicao_texto,
+      hjust = ifelse(concordancia | !is.null(colsby),-0.2,0.5)
     ) +
 
     # eixos sem títulos
