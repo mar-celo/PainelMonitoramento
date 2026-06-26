@@ -116,12 +116,12 @@ mod_capa_ui <- function(id) {
       ),
 
       shiny::tags$div(
-        style = "display:flex; gap:14px; flex:1; min-height:0;",
+        style = "display:flex; gap:14px; flex-wrap:wrap; flex:1; min-height:0;",
 
         # Card — Indígenas
         shiny::tags$div(
           style = paste0(
-            "flex:1; display:flex; flex-direction:column; gap:10px;",
+            "flex:1; min-width:220px; display:flex; flex-direction:column; gap:10px;",
             "background:var(--c-surface-1,#fff);",
             "border:1px solid rgba(255,120,0,.25);",
             "border-top:3px solid #FF7800;",
@@ -167,7 +167,7 @@ mod_capa_ui <- function(id) {
         # Card — Raça e Liderança
         shiny::tags$div(
           style = paste0(
-            "flex:1; display:flex; flex-direction:column; gap:10px;",
+            "flex:1; min-width:220px; display:flex; flex-direction:column; gap:10px;",
             "background:var(--c-surface-1,#fff);",
             "border:1px solid rgba(19,81,180,.20);",
             "border-top:3px solid #1351b4;",
@@ -207,6 +207,53 @@ mod_capa_ui <- function(id) {
             .badge_tag("Cotas 30%",            "#1351b4"),
             .badge_tag("Por Órgão",            "#FF7800"),
             .badge_tag("Razão de Equidade",    "#6c757d")
+          )
+        ),
+
+        # Card — PFGP
+        shiny::tags$div(
+          style = paste0(
+            "flex:2; min-width:300px; display:flex; flex-direction:column; gap:10px;",
+            "background:var(--c-surface-1,#fff);",
+            "border:1px solid rgba(0,69,135,.20);",
+            "border-top:3px solid #004587;",
+            "border-radius:10px; padding:16px 20px;",
+            "box-shadow:var(--shadow-sm); cursor:default;"
+          ),
+          shiny::tags$div(
+            style = "display:flex; align-items:center; gap:10px;",
+            shiny::tags$div(
+              style = paste0(
+                "background:#004587; color:#fff; border-radius:8px;",
+                "width:34px; height:34px; display:flex; align-items:center;",
+                "justify-content:center; font-size:0.95rem; flex-shrink:0;"
+              ),
+              shiny::icon("clipboard-list")
+            ),
+            shiny::actionLink(
+              ns("go_pfgp"), "PFGP — Gestão de Pessoas",
+              style = paste0(
+                "color:var(--c-brand,#004587); font-size:0.93rem; font-weight:700;",
+                "text-decoration:none; line-height:1.2;"
+              )
+            )
+          ),
+          shiny::tags$p(
+            style = paste0(
+              "color:var(--c-ink-2,#495057); font-size:0.8rem;",
+              "line-height:1.6; margin:0; flex:1;"
+            ),
+            "Monitoramento das 6 dimensões estratégicas do Plano Federal de Gestão de Pessoas.",
+            " Indicadores de dimensionamento, carreiras, lideranças, remuneração e desligamentos."
+          ),
+          shiny::tags$div(
+            style = "display:flex; flex-wrap:wrap; gap:5px;",
+            .badge_tag("Dim 1 — Dimensionamento",  "#004587"),
+            .badge_tag("Dim 2 — Carreiras",         "#004587"),
+            .badge_tag("Dim 3 — Bem-Estar",         "#FF7800"),
+            .badge_tag("Dim 4 — Lideranças",        "#1351b4"),
+            .badge_tag("Dim 5 — Remuneração",       "#1351b4"),
+            .badge_tag("Dim 6 — Aposentação",       "#6c757d")
           )
         )
       )
@@ -274,6 +321,10 @@ mod_capa_server <- function(id, root_session = NULL) {
 
     shiny::observeEvent(input$go_etnia, {
       shiny::updateNavbarPage(root_session, "main_nav", selected = "etnia")
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$go_pfgp, {
+      shiny::updateNavbarPage(root_session, "main_nav", selected = "pfgp")
     }, ignoreInit = TRUE)
 
   })
