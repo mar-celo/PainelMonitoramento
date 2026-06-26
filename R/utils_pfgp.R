@@ -91,10 +91,123 @@ ggplotly_c <- function(gg_obj){
 
 ggplot_likert <- function(...){
   ggplot2::ggplot(...) +
-    # scale_fill_brewer(palette = "RdBu") +
-    # scale_color_brewer(palette = "RdBu")+
-    scale_fill_manual(values = .likert_values) +
-    .plot_config
+    ggplot2::scale_fill_manual(values = .likert_values) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(text = ggplot2::element_text(size = txt_size),
+                   legend.position = "bottom",
+                   legend.direction = "horizontal") #+
+
+    # ajustando a legenda
+    # theme(
+    #   legend.position = c(0.3, -0.07)  # ajusta aqui
+    # )
 }
 
+
+# quebras na escala y (para escala de likert)
+quebras_y <- seq(0,100,25)
+labels_y  <- paste0(quebras_y,"%")
+
+
+
+# filtrando itens do indicador
+list_itens <-
+  pfgp_vozes_itens |>
+  filter(id_indicador == q)
+
+# função para criar gráfico de respostas ao item
+likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
+  # parar se colsby tiver mais de uma variável
+  if(length(colsby) > 1) stop("escolha apenas uma variável em colsby")
+
+
+  # agrupando
+  etl_dt |>
+    dplyr::filter(cod_item %in% q) |>
+    dplyr::group_by(
+      across(
+        all_of(
+          c(colsby)
+          )
+        ),
+      cod_item,opcao,opcao.f) |>
+    dplyr::summarise(N = sum(N)) |>
+    dplyr::ungroup() |>
+    dplyr::group_by(
+      across(
+        all_of(
+          c(colsby)
+          )
+        ),
+      cod_item) |>
+    dplyr::mutate(p = 100*N/sum(N)) |>
+    dplyr::ungroup() -> etl_filter
+
+  # alterações para concordancia = T ou com algum colsby
+  if(concordancia | !is.null(colsby)){
+    # define a posição das colunas a depender e concordancia e colsby
+    posicao_barras <- position_dodge()
+
+    # define a posição das labels a depender da concordancia e colsby
+    posicao_texto <- position_dodge2(reverse = T,padding = 0.5)
+
+    #  novo agrupamento
+    etl_filter <-
+      etl_filter |>
+      dplyr::filter(opcao %in% c(4,5)) |>
+      dplyr::group_by(
+        across(
+          all_of(
+            c(colsby)
+          )
+        ),
+        cod_item
+        ) |>
+      dplyr::summarise(N = sum(N),
+                       p = sum(p)) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(opcao.f = ifelse(!is.null(colsby),as.character(get(colsby)),'Concordância'))
+
+  }else{
+
+    # define a posição das colunas a depender da concordancia e colsby
+    posicao_barras <- position_stack(reverse = T)
+
+    # define a posição das labels a depender da concordancia e colsby
+    posicao_texto <- position_stack(reverse = T,vjust = 0.5)
+
+  }
+
+  # iniciando ggplot
+  etl_filter |>
+    ggplot_likert(aes(x = cod_item,
+                      fill = opcao.f,
+                      y = p)) +
+
+    # criando colunas empilhadas
+    geom_col(position = posicao_barras) +
+
+    # incluindo labels com os % (se maiores que 5%)
+    geom_text(
+      aes(
+        label = ifelse(p < 5,
+                       "",
+                       paste0(round(p,0),"%")
+        ),
+        group = opcao.f
+      ),
+      position = posicao_texto
+    ) +
+
+    # eixos sem títulos
+    labs(x = "",y = "",fill = "") +
+
+    # labels e quebras do eixo y
+    scale_y_continuous(breaks = quebras_y,labels = labels_y) +
+
+    # 'girando' gráfico
+    coord_flip() -> p
+
+  return(p)
+}
 
