@@ -14,6 +14,15 @@ library(janitor)
 library(readxl)
 library(fuzzyjoin)
 
+# função para quebra de textos em gráficos (chatGPT)
+quebra_texto2 <- function(texto, largura_max = 40, aplicar_se_maior = 40) {
+
+  if (nchar(texto) <= aplicar_se_maior) {
+    return(texto)
+  }
+
+  return(paste(strwrap(texto, width = largura_max), collapse = "\n"))
+}
 
 # diretório oneDrive -----------------------------------------------------------
 dir_onedrive <- "C:/Users/wesley.jesus/OneDrive - Ministério da Gestão e da Inovação dos Serv. Pub/"
@@ -159,12 +168,14 @@ pfgp_vozes_itens <- left_join(pfgp_vozes_itens,
 
 
 ### Vozes 1
+
+## colunas para agregar
 colsby <- c("co_sexo",
             "co_pgd",
             "co_cor_origem_etnica",
             "co_geracao...11")
 
-
+## agregando
 etl_vozes1 <-
   data_vozes1 %>%
   melt(id.vars = c(colsby),
@@ -174,10 +185,43 @@ etl_vozes1 <-
        na.rm = T) %>%
   .[,.(.N),
     by = c(colsby,"cod_item","opcao")] %>%
-  .[,cod_questao := str_extract_all(cod_item,"^q[0-9]{1,2}") %>% unlist]
+  .[,cod_questao := str_extract_all(cod_item,"^q[0-9]{1,2}") %>% unlist] %>%
+
+  # inserindo enunciado do item
+  left_join(dicio_vozes1[,.(questao_base,item_review)],
+            by = c("cod_item" = "questao_base")) %>%
+  setnames("item_review","item")
 
 
+## Padronizando categorias
 
+cor_origem_etnica <-
+  c("Branca",
+    "Amarela",
+    "Indigena",
+    "Parda",
+    "Preta")
+
+geracao.v <-
+  c("Z",
+    "Milenium",
+    "X",
+    "Boomers")
+
+etl_vozes1[,`:=`(
+  CO_SEXO = ifelse(co_sexo == 1,"Fem","Masc"),
+  NO_COR_ORIGEM_ETNICA = cor_origem_etnica[co_cor_origem_etnica],
+  in_pgd = ifelse(co_pgd == 1,"Sim","Não"),
+  geracao = geracao.v[co_geracao...11])
+  ]
+
+etl_vozes1 <- select(etl_vozes1,-one_of(colsby))
+
+## 'quebrando' enunciados
+etl_vozes1[,`:=`(
+  item.q2 = sapply(item,quebra_texto2,largura_max = 20,aplicar_se_maior = 20) %>%
+    str_to_title()
+  )]
 
 ### Vozes 2
 colsby <- c("CO_SEXO",
@@ -195,7 +239,31 @@ etl_vozes2 <-
        na.rm = T) %>%
   .[,.(.N),
     by = c(colsby,"cod_item","opcao")] %>%
-  .[,cod_questao := str_extract_all(cod_item,"^q[0-9]{1,2}") %>% unlist]
+  .[,cod_questao := str_extract_all(cod_item,"^q[0-9]{1,2}") %>% unlist]%>%
+
+  # inserindo enunciado do item
+  left_join(dicio_vozes2[,.(cod_item,item)],
+            by = c("cod_item"))
+
+
+## 'quebrando' enunciados
+etl_vozes2[,`:=`(
+  item.q2 = sapply(item,quebra_texto2,largura_max = 20,aplicar_se_maior = 20) %>%
+    str_to_title()
+  )]
+
+
+
+## Padronizando categorias
+
+etl_vozes2[,`:=`(
+  CO_SEXO = ifelse(CO_SEXO == "F","Fem","Masc"),
+  NO_COR_ORIGEM_ETNICA = str_to_title(NO_COR_ORIGEM_ETNICA),
+  in_pgd = ifelse(in_pgd,"Sim","Não"))
+]
+
+
+
 
 
 # ==============================================================================.
