@@ -551,14 +551,14 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
         ) |>
         DT::formatStyle(
           "ind4_1_a_12",
-          background = styleEqual(dom_ind4_12,pal(dom_ind4_12)),
+          background = DT::styleEqual(dom_ind4_12,pal(dom_ind4_12)),
           backgroundSize = '98% 88%',
           backgroundRepeat = 'no-repeat',
           backgroundPosition = 'center'
         ) |>
         DT::formatStyle(
           "ind4_13_a_17",
-          background = styleEqual(dom_ind4_17,pal(dom_ind4_17)),
+          background = DT::styleEqual(dom_ind4_17,pal(dom_ind4_17)),
           backgroundSize = '98% 88%',
           backgroundRepeat = 'no-repeat',
           backgroundPosition = 'center'
@@ -580,12 +580,15 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
 # ------------------------------------------------------------------
 
 # Monta DT para tabelas de órgão com color bar de percentuais
-.dt_orgao <- function(df, col_orgao) {# No seu server.R (ou no bloco correspondente do Shiny)
+.dt_orgao <- function(df, col_orgao) {
 
-  # 1. Busca das colunas (certifique-se de usar df() se for reativo!)
-  # Se 'df' for reativo, troque as duas linhas abaixo por df()
-  col_n1 <- grep("^N.vel.1|^Nivel.1", names(df), value = TRUE)[1]
-  col_n2 <- grep("^N.vel.13|^Nivel.13", names(df), value = TRUE)[1]
+  # Normaliza nomes para busca cross-locale:
+  # macOS (UTF-8) converte "Nível" -> "N'ivel"; Linux (C.UTF-8) converte para "Nivel".
+  # gsub remove apóstrofes/tildes residuais antes do grep.
+  names_norm <- gsub("[^A-Za-z0-9 ]", "",
+                     iconv(names(df), "UTF-8", "ASCII//TRANSLIT", sub = ""))
+  col_n1 <- names(df)[grepl("ivel 1 a",  names_norm, ignore.case = TRUE)][1]
+  col_n2 <- names(df)[grepl("ivel 13",   names_norm, ignore.case = TRUE)][1]
 
   dt_opts <- list(
     pageLength  = 15,
