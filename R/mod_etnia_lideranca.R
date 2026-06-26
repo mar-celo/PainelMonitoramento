@@ -456,34 +456,22 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
           nivel_label = dplyr::case_when(
             nivel_cod == "ind4_1_a_12"   ~ "Níveis 1 a 12",
             nivel_cod == "ind4_13_a_17"  ~ "Níveis 13 a 17"
-          )
-        ) |>
+          ),
+          serie = paste(nome_cor_origem_etnica, nivel_label)
+        )
+
+      # gráfico em ggplot
+      df_long |>
         dplyr::filter(nome_cor_origem_etnica %in%
-                 c("BRANCA","PRETA","PARDA","Negras"))
+                 c("BRANCA","PRETA","PARDA","Negras")) |>
+        ggplot_cat(aes(x = anomes, y = razao, col = nome_cor_origem_etnica)) +
+        geom_line() +
+        geom_point(size = 2.2) +
+        geom_hline(yintercept = 1, linetype = 2) +
+        labs(x = "", col = "", y = "") +
+        facet_wrap(nivel_label ~., nrow = 1) -> gf
 
-      # facet_wrap + col + geom_hline quebra gg2list no plotly;
-      # solução: subplot manual com um painel por nivel_label
-      make_panel <- function(nivel, show_legend) {
-        df_nivel <- dplyr::filter(df_long, nivel_label == nivel)
-        gf <- ggplot_cat(df_nivel,
-                         aes(x = anomes, y = razao,
-                             col = nome_cor_origem_etnica)) +
-          geom_line() +
-          geom_point(size = 2.2) +
-          geom_hline(yintercept = 1, linetype = 2) +
-          labs(x = "", col = "", y = "", title = nivel)
-        p <- plotly::ggplotly(gf)
-        if (!show_legend) p <- plotly::layout(p, showlegend = FALSE)
-        p
-      }
-
-      plotly::subplot(
-        make_panel("Níveis 1 a 12",  show_legend = FALSE),
-        make_panel("Níveis 13 a 17", show_legend = TRUE),
-        nrows    = 1,
-        shareY   = TRUE,
-        titleX   = TRUE
-      )
+      ggplotly_c(gf)
 
     })
 
