@@ -155,7 +155,7 @@ mod_pfgp_dim4_server <- function(id,
     })
 
     ### server: Percepção de critérios de promoção ----
-    # output$vozes_opor_capacita <- plotly::renderPlotly({reac_capacitacao()})
+    output$vozes_opor_capacita <- plotly::renderPlotly({reac_capacitacao()})
 
     ### server: Percepção de desempenho da equipe ----
     output$vozes_desemp_equipe <- plotly::renderPlotly({reac_desemp_equipe()})

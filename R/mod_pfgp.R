@@ -79,42 +79,98 @@ mod_pfgp_server <- function(id, grafico_compartilhado) {
         p_v1 <- likert_vozes(etl_dt = etl_vozes1,q = pfgp_filter$cod_item_vozes1,concordancia = F,colsby = NULL)
         p_v2 <- likert_vozes(etl_dt = etl_vozes2,q = pfgp_filter$cod_item_vozes2,concordancia = F,colsby = NULL)
 
-        # 3. criando objetos ggplotly
-        fig1 <- ggplotly_c(p_v1)
-        fig2 <- ggplotly_c(p_v2)
+        # 3. Juntar lado a lado de forma nativa e segura para o Deploy
+        tem_fig1 <- !all(is.na(pfgp_filter$cod_item_vozes1)) # Ou sua lógica de validação de dados
+        tem_fig2 <- !all(is.na(pfgp_filter$cod_item_vozes2))
 
+        # ---- CASO 1: Ambos os gráficos possuem dados ----
+        if (tem_fig1 && tem_fig2) {
 
-        # 4. Juntar lado a lado de forma nativa e segura para o Deploy
-        plotly::subplot(
-          fig1, fig2,
-          nrows = 1,          # Uma linha (lado a lado)
-          margin = 0.05,       # Espaço entre os dois gráficos
-          titleX = TRUE,      # Mantém os títulos dos eixos X
-          titleY = TRUE       # Mantém os títulos dos eixos Y
-        )  |>
-          plotly::layout(
-            showlegend = FALSE, # Remove legendas duplicadas se houver
-            autosize = TRUE,
-            # O PULO DO GATO: Criamos dois títulos falsos usando coordenadas da tela
-            annotations = list(
-              list(
-                x = 0.22, # Centralizado no primeiro gráfico (22% da largura)
-                y = 1.05, # Levemente acima do topo do gráfico
-                text = "<b>Vozes 1</b>", # Tag HTML para negrito
-                showarrow = FALSE,
-                xref = "paper", yref = "paper",
-                font = list(size = 14)
-              ),
-              list(
-                x = 0.78, # Centralizado no segundo gráfico (78% da largura)
-                y = 1.05,
-                text = "<b>Vozes 2</b>",
-                showarrow = FALSE,
-                xref = "paper", yref = "paper",
-                font = list(size = 14)
+          # 4.1 criando objetos ggplotly com subplot
+          fig1 <- ggplotly_c(p_v1)
+          fig2 <- ggplotly_c(p_v2)
+
+          fig_final <- plotly::subplot(
+            fig1, fig2,
+            nrows = 1,
+            margin = 0.05,
+            titleX = TRUE,
+            titleY = TRUE
+          ) |>
+            plotly::layout(
+              showlegend = FALSE,
+              autosize = TRUE,
+              margin = list(t = 40),
+              annotations = list(
+                list(
+                  x = 0.22, # Alinhado na esquerda (22%)
+                  y = 1.05,
+                  text = "<b>Vozes 1</b>",
+                  showarrow = FALSE,
+                  xref = "paper", yref = "paper",
+                  font = list(size = 14)
+                ),
+                list(
+                  x = 0.78, # Alinhado na direita (78%)
+                  y = 1.05,
+                  text = "<b>Vozes 2</b>",
+                  showarrow = FALSE,
+                  xref = "paper", yref = "paper",
+                  font = list(size = 14)
+                )
               )
             )
-          ) -> fig_final
+
+          # ---- CASO 2: Apenas o Gráfico 1 possui dados ----
+        } else if (tem_fig1) {
+
+          # 4.2 criando objetos ggplotly SEM subplot
+          fig_final <- ggplotly_c(p_v1) |>
+            plotly::layout(
+              showlegend = FALSE,
+              autosize = TRUE,
+              margin = list(t = 40),
+              annotations = list(
+                list(
+                  x = 0.50, # O PULO DO GATO: Centralizado perfeitamente no meio (50%)
+                  y = 1.05,
+                  text = "<b>Vozes 1</b>",
+                  showarrow = FALSE,
+                  xref = "paper", yref = "paper",
+                  font = list(size = 14)
+                )
+              )
+            )
+
+          # ---- CASO 3: Apenas o Gráfico 2 possui dados ----
+        } else if (tem_fig2) {
+
+          # 4.3 criando objetos ggplotly SEM subplot
+          fig_final <- ggplotly_c(p_v2) |>
+            plotly::layout(
+              showlegend = FALSE,
+              autosize = TRUE,
+              margin = list(t = 40),
+              annotations = list(
+                list(
+                  x = 0.50, # Centralizado perfeitamente no meio (50%)
+                  y = 1.05,
+                  text = "<b>Vozes 2</b>",
+                  showarrow = FALSE,
+                  xref = "paper", yref = "paper",
+                  font = list(size = 14)
+                )
+              )
+            )
+
+          # ---- CASO 4: Nenhum gráfico possui dados ----
+        } else {
+          # Retorna um painel vazio amigável para não estourar erro na tela do usuário
+          fig_final <- plotly::plotly_empty() |>
+            plotly::layout(
+              title = list(text = "Sem dados disponíveis para este indicador", font = list(size = 14))
+            )
+        }
 
         fig_final
 
