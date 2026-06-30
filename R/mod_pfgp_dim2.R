@@ -43,11 +43,29 @@ mod_pfgp_dim2_ui <- function(id) {
           bslib::card_body(.spin(plotly::plotlyOutput(ns("dist_racagen_descent"), height = "420px")))
         )
       )
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção de justiça remuneratória"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_jusica_remun"), height = "420px")))
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção sobre critérios de promoção"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_criterio_promo"), height = "420px")))
     )
   )
 }
 
-mod_pfgp_dim2_server <- function(id) {
+mod_pfgp_dim2_server <- function(id,
+                                 reac_justica_remun,
+                                 reac_criterios_promo) {
   shiny::moduleServer(id, function(input, output, session) {
 
     tab_cargo_transversal       <- readRDS(here::here("data-raw/data_pfgp/tab_cargo_transversal.rds"))
@@ -146,5 +164,15 @@ mod_pfgp_dim2_server <- function(id) {
 
       ggplotly_c(gr_racagenero_descent)
     })
-  })
+
+
+    ### server: Percepção de justiça remuneratória ----
+
+    output$vozes_jusica_remun <- plotly::renderPlotly({reac_justica_remun()})
+
+    ### server: Percepção de critérios de promoção
+    output$vozes_criterio_promo <- plotly::renderPlotly({reac_criterios_promo()})
+
+    }
+    )
 }

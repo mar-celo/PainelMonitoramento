@@ -92,12 +92,24 @@ mod_pfgp_dim3_ui <- function(id) {
           "de trabalho em um período de referência."
         )
       )
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção de segurança psicológica"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_seg_psico"), height = "420px")))
     )
   )
 }
 
-mod_pfgp_dim3_server <- function(id) {
+mod_pfgp_dim3_server <- function(id,
+                                 reac_seguranca_psico) {
   shiny::moduleServer(id, function(input, output, session) {
     # Indicadores em fase de alinhamento — sem lógica de server ativa
+
+    ### server: Percepção de critérios de promoção
+    output$vozes_seg_psico <- plotly::renderPlotly({reac_seguranca_psico()})
   })
 }

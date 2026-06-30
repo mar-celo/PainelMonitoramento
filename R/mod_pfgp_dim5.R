@@ -82,12 +82,64 @@ mod_pfgp_dim5_ui <- function(id) {
           )
         )
       )
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção de justiça remuneratória"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_jusica_remun_d5"), height = "420px")))
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção de Engajamento no trabalho"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_engaja_trabalho"), height = "420px")))
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Satisfação no trabalho"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_satisf_trab"), height = "420px")))
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Intenção de saída / permanência"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_inten_saida"), height = "420px")))
     )
   )
 }
 
-mod_pfgp_dim5_server <- function(id) {
+
+
+mod_pfgp_dim5_server <- function(id,
+                                 reac_justica_remun,
+                                 reac_engaja_trab,
+                                 reac_satisf_trab,
+                                 reac_inten_saida) {
   shiny::moduleServer(id, function(input, output, session) {
     # Cálculo do Índice de Gini e Curva de Lorenz a implementar
+
+
+    ### server: Percepção de justiça remuneratória ----
+    output$vozes_jusica_remun_d5 <- plotly::renderPlotly({reac_justica_remun()})
+
+
+    ### server: Percepção de engajamento no trabalho ----
+    output$vozes_engaja_trabalho <- plotly::renderPlotly({reac_engaja_trab()})
+
+    ### server: Satisfação no trabalho ----
+    output$vozes_satisf_trab <- plotly::renderPlotly({reac_satisf_trab()})
+
+    ### server: Intenção de saída / permanência ----
+    output$vozes_inten_saida <- plotly::renderPlotly({reac_inten_saida()})
   })
 }

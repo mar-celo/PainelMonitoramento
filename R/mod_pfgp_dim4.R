@@ -39,11 +39,39 @@ mod_pfgp_dim4_ui <- function(id) {
         ),
         bslib::card_body(.spin(plotly::plotlyOutput(ns("serie_lidera_origem"), height = "380px")))
       )
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção Oportunidades de capacitação"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_opor_capacita"), height = "420px")))
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção de desempenho de equipe"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_desemp_equipe"), height = "420px")))
+    ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        shiny::icon("chart-bar"),
+        "Percepção de desempenho de organizacional"
+      ),
+      bslib::card_body(.spin(plotly::plotlyOutput(ns("vozes_desemp_org"), height = "420px")))
     )
   )
 }
 
-mod_pfgp_dim4_server <- function(id, grafico_compartilhado) {
+mod_pfgp_dim4_server <- function(id,
+                                 grafico_compartilhado,
+                                 reac_capacitacao,
+                                 reac_desemp_equipe,
+                                 reac_desemp_org) {
   shiny::moduleServer(id, function(input, output, session) {
 
     df_liderancas <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
@@ -125,5 +153,16 @@ mod_pfgp_dim4_server <- function(id, grafico_compartilhado) {
 
       ggplotly_c(gr_lid_origem)
     })
+
+    ### server: Percepção de critérios de promoção ----
+    # output$vozes_opor_capacita <- plotly::renderPlotly({reac_capacitacao()})
+
+    ### server: Percepção de desempenho da equipe ----
+    output$vozes_desemp_equipe <- plotly::renderPlotly({reac_desemp_equipe()})
+
+    ### server: Percepção de desempenho organizacional ----
+    output$vozes_desemp_org <- plotly::renderPlotly({reac_desemp_org()})
+
+
   })
 }
