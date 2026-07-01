@@ -31,7 +31,7 @@ app_ui <- function(request) {
       ),
       bg = "#004587",
       inverse = TRUE,
-      fillable = TRUE,
+      fillable = FALSE,
 
       # ---- Capa ----
       bslib::nav_panel(
@@ -271,6 +271,7 @@ golem_add_external_resources <- function() {
         box-shadow: var(--shadow-md) !important;
         border: none !important;
       }
+
 
       /* ── Tabs internos (navset_card_underline) ─────────────── */
       .card > .card-header > .nav-underline,

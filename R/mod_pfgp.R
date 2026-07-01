@@ -54,13 +54,6 @@ mod_pfgp_ui <- function(id) {
         value = "pfgp_6",
         icon  = shiny::icon("door-open"),
         mod_pfgp_dim6_ui(ns("dim6"))
-      ),
-
-      bslib::nav_panel(
-        title = "Teste: redimensionando página com uma única barra de rolagem",
-        value = "pfgp_9",
-        icon  = shiny::icon("door-open"),
-        mod_pfgp_dim9_ui(ns("dim9"))
       )
     )
   )
@@ -209,10 +202,6 @@ mod_pfgp_server <- function(id, grafico_compartilhado) {
 
     mod_pfgp_dim6_server("dim6")
 
-    mod_pfgp_dim9_server("dim9",
-                         grafico_compartilhado = grafico_compartilhado,
-                         reac_capacitacao = render_vozes("Oportunidade de capacitação"),
-                         reac_desemp_equipe = render_vozes("Percepção de desempenho de equipe"),
-                         reac_desemp_org = render_vozes("Percepção de desempenho organizacional"))
+
     })
 }
