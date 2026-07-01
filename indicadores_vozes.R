@@ -67,12 +67,6 @@ dicio_vozes1[,item_review := gsub("APOIO.*AMIGOS.*","Redes de relacionamento",it
 
 ## Vozes 2
 load(file = file.path(dir_vozes2,"vozes2_microdados_estruturados.rda"))
-vozes2.dt <- read_excel(
-  file.path(
-    dir_vozes1,
-    "tb_dados_vozes1_multiplas.xlsx"
-  )
-)
 assign("data_vozes2",data_vozes2_unindent);rm(data_vozes2_unindent);gc()
 
 
