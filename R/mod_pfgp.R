@@ -54,6 +54,13 @@ mod_pfgp_ui <- function(id) {
         value = "pfgp_6",
         icon  = shiny::icon("door-open"),
         mod_pfgp_dim6_ui(ns("dim6"))
+      ),
+
+      bslib::nav_panel(
+        title = "Teste: redimensionando página com uma única barra de rolagem",
+        value = "pfgp_9",
+        icon  = shiny::icon("door-open"),
+        mod_pfgp_dim9_ui(ns("dim9"))
       )
     )
   )
@@ -179,22 +186,33 @@ mod_pfgp_server <- function(id, grafico_compartilhado) {
 
 
     mod_pfgp_dim1_server("dim1")
+
     mod_pfgp_dim2_server("dim2",
                          reac_justica_remun = render_vozes("Percepção de justiça remuneratória"),
                          reac_criterios_promo = render_vozes("Percepções sobre critérios de promoção"))
+
     mod_pfgp_dim3_server("dim3",
                          reac_seguranca_psico = render_vozes("Percepção de segurança psicológica"))
+
     mod_pfgp_dim4_server("dim4",
                          grafico_compartilhado = grafico_compartilhado,
                          reac_capacitacao = render_vozes("Oportunidade de capacitação"),
                          reac_desemp_equipe = render_vozes("Percepção de desempenho de equipe"),
                          reac_desemp_org = render_vozes("Percepção de desempenho organizacional"))
+
     mod_pfgp_dim5_server("dim5",
                          reac_justica_remun = render_vozes("Percepção de justiça remuneratória"),
                          reac_engaja_trab = render_vozes("Percepção de engajamento no trabalho"),
                          reac_satisf_trab = render_vozes("Satisfação no trabalho"),
                          reac_inten_saida = render_vozes("Intenção de saída / permanência")
                          )
+
     mod_pfgp_dim6_server("dim6")
-  })
+
+    mod_pfgp_dim9_server("dim9",
+                         grafico_compartilhado = grafico_compartilhado,
+                         reac_capacitacao = render_vozes("Oportunidade de capacitação"),
+                         reac_desemp_equipe = render_vozes("Percepção de desempenho de equipe"),
+                         reac_desemp_org = render_vozes("Percepção de desempenho organizacional"))
+    })
 }
