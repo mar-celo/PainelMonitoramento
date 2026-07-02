@@ -96,6 +96,14 @@ nomes_dim <- c(
   "dim6" = "6. Aposentação, Pensões e Desligamentos"
 )
 
+de_para_status <- c('1 - Mapear fonte' = '1 - Em conceituação',
+                    '2 - A agendar com unidade responsável'  = '2 - A validar com a área',
+                    '3 - Reunião agendada com unidade responsável' = '3 - Reunião agendada com a área',
+                    '4 - Dados em processo de obtenção' = '4 - Validado pela área',
+                    '5 - Dados disponíveis/obtidos' = '5 - Dados obtidos/em tratamento',
+                    '6 - No shiny' = '6 - Publicados')
+
+pfgp_indicadores <- mutate(pfgp_indicadores,status = de_para_status[status])
 
 pfgp_indicadores_long <- pfgp_indicadores %>%
   pivot_longer(
