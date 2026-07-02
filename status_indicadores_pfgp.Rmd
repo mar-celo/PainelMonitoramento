@@ -21,6 +21,7 @@ library(magrittr)
 library(DT)
 library(janitor)
 library(dplyr)
+library(data.table)
 library(tidyverse)
 library(crosstalk)
 library(tidyr)
@@ -94,6 +95,18 @@ nomes_dim <- c(
   "dim5" = "5. Remuneração, Benefícios, Reconhecimento e Recompensas Não Pecuniárias",
   "dim6" = "6. Aposentação, Pensões e Desligamentos"
 )
+
+
+pfgp_indicadores_long <- pfgp_indicadores %>%
+  pivot_longer(
+    cols = starts_with("dim"), 
+    names_to = "Categoria", 
+    values_to = "Marcacao"
+  ) %>% 
+  filter(!is.na(Marcacao) & Marcacao == 1) %>%
+  setDT()
+
+pfgp_indicadores_long[,n_dimensoes := n_distinct(Categoria),.(id_indicador)]
 
 grafico_flags_interativo <- function(dados, titulo){
   
