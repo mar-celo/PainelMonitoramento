@@ -26,6 +26,8 @@ library(crosstalk)
 library(tidyr)
 library(htmltools)
 library(stringi)
+
+source('data-raw/metodos.r')
 ```
 
 ```{r, echo=FALSE, include=FALSE}
@@ -35,7 +37,12 @@ pfgp_indicadores <- read_excel("data-raw/data_pfgp/plataforma_pfgp_indicadores 2
 
 ```
 
-```{r, echo=FALSE}
+
+## Introdução
+
+A princípio, havia **`r NROW(pfgp_indicadores)`** indicadores sugeridos por `r pfgp_indicadores$embasamento_sugestao %>% na.omit() %>%lista_e(" e ")`
+
+```{r, echo=FALSE, warning=F, message=F}
 
 
 limpar_texto <- function(x) {
@@ -64,133 +71,30 @@ pfgp_indicadores <- pfgp_indicadores %>%
       where(is.character),
       limpar_texto
     )
-  ) %>% filter(str_starts(apresentacao_pfgp_2030_02_06, "Sim"))
+  ) %>% filter(grepl("sim",apresentacao_pfgp_2030_02_06,ignore.case = T),
+               status != "Excluído")
 
 pfgp_indicadores$dim4 <- as.numeric(pfgp_indicadores$dim4)
 ```
 
-## Resumo dos indicadores {.tabset}
 
-### Cadeia de Valores
+No ENGP 2026, foram apresentados **`r NROW(pfgp_indicadores)`**.
 
-```{r, echo=FALSE, warning=FALSE}
-#qtd de indicadores por tipo de: cadeia de valores/marco lógico
-tabela_resumo1 <- table(pfgp_indicadores$tipo_cadeia_valor,useNA = "always")
-tabela_resumo2 <- table(pfgp_indicadores$tipo_marco_logico, useNA = "always")
-
-
-# Converte o summary em uma tabela tratável
-dados_tabela1 <- as.data.frame(tabela_resumo1)
-dados_tabela2 <- as.data.frame(tabela_resumo2)
-
-colnames(dados_tabela1) <- c("Cadeia de Valores", "Quantidade")
-dados_tabela1$Quantidade <- as.numeric(as.character(dados_tabela1$Quantidade))
-colnames(dados_tabela2) <- c("Marco Lógico", "Quantidade")
-
-
-#Tabela para visualização
-dados_tabela1 %>%
-  mutate(
-    Porcentagem = (Quantidade / sum(Quantidade)) * 100,
-    # Arredonda para 1 casa decimal e adiciona o símbolo de %
-    Porcentagem = paste0(round(Porcentagem, 1), "%")
-  ) %>%
-  kable(
-    col.names = c("Cadeia de Valores", "Quantidade", 
-                  "Porcentagem"),
-    align = "cl",
-    format = "html"
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"),
-    full_width = FALSE,
-    position = "center"
-  )
-
-
-#Visualização com o gráfico de barras
-grafico_indicadores <- function(dados, coluna_categoria, coluna_valor, titulo){
-  
-  # 1. Preparar os dados
-  dados_plot <- dados %>%
-    group_by(.data[[coluna_categoria]]) %>%
-    summarise(valor_total = sum(.data[[coluna_valor]], na.rm = TRUE)) %>%
-    arrange(desc(valor_total))
-  
-  # 2. Criar o gráfico
-  plot_ly(
-    dados_plot,
-    x = ~reorder(.data[[coluna_categoria]], -valor_total),
-    y = ~valor_total,
-    type = 'bar',
-    marker = list(color = '#0000aa', line = list(color = '#404040', width = 0.5)),
-    # AQUI ESTÁ A MUDANÇA: deixamos apenas o valor no texto do hover
-    text = ~paste0("Quantidade: ", valor_total),
-    hoverinfo = 'x+text' # Mostra o nome do eixo X + o nosso texto personalizado
-  ) %>%
-    layout(
-      title = list(text = titulo, font = list(size = 18, family = "Arial", weight = "bold")),
-      xaxis = list(
-        title = coluna_categoria,showticklabels = FALSE,
-        categoryorder = "array",
-        categoryarray = ~reorder(.data[[coluna_categoria]], -valor_total),
-        showgrid = FALSE
-      ),
-      yaxis = list(
-        title = "Quantidade",
-        showgrid = TRUE,
-        gridcolor = '#f0f0f0'
-      ),
-      plot_bgcolor = 'white',
-      paper_bgcolor = 'white',
-      margin = list(t = 60, b = 80)
-    )
-}
-
-# Chamar a função
-grafico_indicadores(
-  dados_tabela1,
-  "Cadeia de Valores",
-  "Quantidade",
-  "Total de Indicadores por Cadeia de Valores"
-)
-```
-
-
-### Marco Lógico
-```{r, echo=FALSE, warning=FALSE}
-dados_tabela2 %>%
-  mutate(
-    Porcentagem = (Quantidade / sum(Quantidade)) * 100,
-    # Arredonda para 1 casa decimal e adiciona o símbolo de %
-    Porcentagem = paste0(round(Porcentagem, 1), "%")
-  ) %>%
-  kable(
-    col.names = c("Marco Lógico", "Quantidade", "Porcentagem"),
-    align = "cl",
-    format = "html"
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"),
-    full_width = FALSE,
-    position = "center"
-  )
-
-# Chamar a função
-grafico_indicadores(
-  dados_tabela2,
-  "Marco Lógico",
-  "Quantidade",
-  "Total de Indicadores por Marco Lógico"
-)
-
-
-
-```
 
 ## Dimensões
 
 ```{r, echo=FALSE}
+
+# tabela de tradução dos nomes
+nomes_dim <- c(
+  "dim1" = "1. Planejamento, Diagnóstico da Força de Trabalho e Processo Seletivo​",
+  "dim2" = "2. Carreiras, Cargos, Progressão e Promoção​",
+  "dim3" = "3. Alocação, Ambientação, Estágio Probatório e Bem-Estar​",
+  "dim4" = "4. Desenvolvimento e Desempenho de Pessoas e Formação de Lideranças Públicas​",
+  "dim5" = "5. Remuneração, Benefícios, Reconhecimento e Recompensas Não Pecuniárias",
+  "dim6" = "6. Aposentação, Pensões e Desligamentos"
+)
+
 grafico_flags_interativo <- function(dados, titulo){
   
   dados_long <- dados %>%
@@ -205,15 +109,7 @@ grafico_flags_interativo <- function(dados, titulo){
     arrange(desc(Qtd))
   
   
-  # tabela de tradução dos nomes
-  nomes_dim <- c(
-    "dim1" = "1: Planejamento, Diagnóstico da Força de Trabalho e Processo Seletivo​",
-    "dim2" = "2: Carreiras, Cargos, Progressão e Promoção​",
-    "dim3" = "3: Alocação, Ambientação, Estágio Probatório e Bem-Estar​",
-    "dim4" = "4: Desenvolvimento e Desempenho de Pessoas e Formação de Lideranças Públicas​",
-    "dim5" = "5: Remuneração, Benefícios, Reconhecimento e Recompensas Não Pecuniárias",
-    "dim6" = "6: Aposentação, Pensões e Desligamentos"
-  )
+
   
   
   dados_long <- dados_long %>%
@@ -296,37 +192,30 @@ tabela_status_dim <- pfgp_indicadores %>%
     cols = starts_with("dim"),
     names_to = "Dimensao",
     values_to = "Flag"
-  ) %>%
-  filter(Flag == 1) %>%
-  mutate(
-    Dimensao = sub("^dim", "", Dimensao)
-  ) %>%
+  ) %>% 
+  filter(Flag == 1) %>% 
   group_by(Dimensao, status) %>%
   summarise(
     Qtd = n_distinct(id_indicador),
     .groups = "drop"
-  ) %>%
+  ) %>% 
   group_by(Dimensao) %>%
   mutate(
     Total = sum(Qtd),
     Valor = paste0(Qtd, " (", round(Qtd/Total*100, 1), "%)")
   ) %>%
   ungroup() %>%
-  select(Dimensao, status, Valor) %>%
+  select(Dimensao,Total, status, Valor) %>%
   pivot_wider(
     names_from = status,
     values_from = Valor,
-    values_fill = "-"
-  )
+    values_fill = "-",
+    names_sort = TRUE
+  ) %>% 
+  mutate(Dimensao = nomes_dim[Dimensao])
+
 tabela_status_dim %>%
-  kable(
-    align = "lccc"
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"),
-    full_width = FALSE,
-    position = "center"
-  )
+  DT::datatable(rownames = F)
 ```
 
 
@@ -345,74 +234,6 @@ dados_long <- pfgp_indicadores %>%
 shared_dados <- SharedData$new(dados_long, group = "dimensoes")
 
 
-```
-
-
-
-
-
-## Tabela Resumo
-
-
-```{r, echo=FALSE}
-tabela_dimensoes <- pfgp_indicadores %>%
-  
-  pivot_longer(
-    cols = starts_with("dim"),
-    names_to = "Dimensao",
-    values_to = "Flag"
-  ) %>%
-  
-  filter(Flag == 1) %>%
-  
-  # transforma dim1 -> 1
-  mutate(Dimensao = sub("^dim", "", Dimensao)) %>%
-  
-  group_by(Dimensao) %>%
-  
-  summarise(
-    Quantidade = n_distinct(id_indicador),
-    Cadeia1 = n_distinct(id_indicador[tipo_cadeia_valor == "Gestão de RH – Atividades e Processos"]),
-    Cadeia2 = n_distinct(id_indicador[tipo_cadeia_valor == "Gestão de RH – Resultados"]),
-    Cadeia3 = n_distinct(id_indicador[tipo_cadeia_valor == "Objetivos organizacionais"]),
-    .groups = "drop"
-  ) %>%
-  
-  mutate(
-    `Gestão RH - Atividades e Processos` =
-      paste0(Cadeia1, " (", round(Cadeia1/Quantidade*100,1), "%)"),
-    
-    `Gestão RH - Resultados` =
-      paste0(Cadeia2, " (", round(Cadeia2/Quantidade*100,1), "%)"),
-    
-    `Objetivos Organizacionais` =
-      paste0(Cadeia3, " (", round(Cadeia3/Quantidade*100,1), "%)")
-  ) %>%
-  
-  select(
-    Dimensao,
-    Quantidade,
-    `Gestão RH - Atividades e Processos`,
-    `Gestão RH - Resultados`,
-    `Objetivos Organizacionais`
-  )
-
-tabela_dimensoes %>%
-  kable(
-    col.names = c(
-      "Dimensão",
-      "Quantidade",
-      "Gestão RH - Atividades e Processos (Qtd/%)",
-      "Gestão RH - Resultados (Qtd/%)",
-      "Objetivos Organizacionais (Qtd/%)"
-    ),
-    align = "ccccc"
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"),
-    full_width = FALSE,
-    position = "center"
-  )
 ```
 
 
@@ -504,4 +325,215 @@ div(class = "row",
   )
 )
 ```
+
+
+
+## Resumo dos indicadores {.tabset}
+
+### Cadeia de Valores
+
+```{r, echo=FALSE, warning=FALSE}
+#qtd de indicadores por tipo de: cadeia de valores/marco lógico
+tabela_resumo1 <- table(pfgp_indicadores$tipo_cadeia_valor,useNA = "always")
+tabela_resumo2 <- table(pfgp_indicadores$tipo_marco_logico, useNA = "always")
+
+
+# Converte o summary em uma tabela tratável
+dados_tabela1 <- as.data.frame(tabela_resumo1)
+dados_tabela2 <- as.data.frame(tabela_resumo2)
+
+# Converte vars para fatores ordenados
+dados_tabela1 <- mutate(dados_tabela1,Var1 = factor(Var1,
+                                                     levels = c('Gestão de RH – Atividades e Processos',
+                                                                'Gestão de RH – Resultados',
+                                                                'Objetivos organizacionais'),
+                                                     ordered = T
+                                                     )
+                        )%>%
+  arrange(Var1)
+
+dados_tabela2 <- mutate(dados_tabela2,Var1 = factor(Var1,
+                                                     levels = c('Insumo',
+                                                                'Atividade',
+                                                                'Produto',
+                                                                'Resultado',
+                                                                'Impacto'),
+                                                     ordered = T
+                                                     )
+                        )%>%
+  arrange(Var1)
+
+colnames(dados_tabela1) <- c("Cadeia de Valores", "Quantidade")
+dados_tabela1$Quantidade <- as.numeric(as.character(dados_tabela1$Quantidade))
+colnames(dados_tabela2) <- c("Marco Lógico", "Quantidade")
+
+
+#Tabela para visualização
+dados_tabela1 %>%
+  mutate(
+    Porcentagem = (Quantidade / sum(Quantidade)) * 100,
+    # Arredonda para 1 casa decimal e adiciona o símbolo de %
+    Porcentagem = paste0(round(Porcentagem, 1), "%")
+  ) %>%
+  kable(
+    col.names = c("Cadeia de Valores", "Quantidade", 
+                  "Porcentagem"),
+    align = "cl",
+    format = "html"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,
+    position = "center"
+  )
+
+
+#Visualização com o gráfico de barras
+grafico_indicadores <- function(dados, coluna_categoria, coluna_valor, titulo){
+  
+  # 1. Preparar os dados
+  dados_plot <- dados %>%
+    group_by(.data[[coluna_categoria]]) %>%
+    summarise(valor_total = sum(.data[[coluna_valor]], na.rm = TRUE)) #%>%
+    # arrange(desc(valor_total))
+  
+  # 2. Criar o gráfico
+  plot_ly(
+    dados_plot,
+    x = ~reorder(.data[[coluna_categoria]], -valor_total),
+    y = ~valor_total,
+    type = 'bar',
+    marker = list(color = '#0000aa', line = list(color = '#404040', width = 0.5)),
+    # AQUI ESTÁ A MUDANÇA: deixamos apenas o valor no texto do hover
+    text = ~paste0("Quantidade: ", valor_total),
+    hoverinfo = 'x+text' # Mostra o nome do eixo X + o nosso texto personalizado
+  ) %>%
+    layout(
+      title = list(text = titulo, font = list(size = 18, family = "Arial", weight = "bold")),
+      xaxis = list(
+        title = coluna_categoria,showticklabels = FALSE,
+        categoryorder = "array",
+        categoryarray = ~reorder(.data[[coluna_categoria]], -valor_total),
+        showgrid = FALSE
+      ),
+      yaxis = list(
+        title = "Quantidade",
+        showgrid = TRUE,
+        gridcolor = '#f0f0f0'
+      ),
+      plot_bgcolor = 'white',
+      paper_bgcolor = 'white',
+      margin = list(t = 60, b = 80)
+    )
+}
+
+# Chamar a função
+grafico_indicadores(
+  dados_tabela1,
+  "Cadeia de Valores",
+  "Quantidade",
+  "Total de Indicadores por Cadeia de Valores"
+)
+```
+
+
+
+#### Tabela Resumo
+
+
+```{r, echo=FALSE}
+tabela_dimensoes <- pfgp_indicadores %>%
+  
+  pivot_longer(
+    cols = starts_with("dim"),
+    names_to = "Dimensao",
+    values_to = "Flag"
+  ) %>%
+  
+  filter(Flag == 1) %>%
+  
+  # transforma dim1 -> 1
+  mutate(Dimensao = sub("^dim", "", Dimensao)) %>%
+  
+  group_by(Dimensao) %>%
+  
+  summarise(
+    Quantidade = n_distinct(id_indicador),
+    Cadeia1 = n_distinct(id_indicador[tipo_cadeia_valor == "Gestão de RH – Atividades e Processos"]),
+    Cadeia2 = n_distinct(id_indicador[tipo_cadeia_valor == "Gestão de RH – Resultados"]),
+    Cadeia3 = n_distinct(id_indicador[tipo_cadeia_valor == "Objetivos organizacionais"]),
+    .groups = "drop"
+  ) %>%
+  
+  mutate(
+    `Gestão RH - Atividades e Processos` =
+      paste0(Cadeia1, " (", round(Cadeia1/Quantidade*100,1), "%)"),
+    
+    `Gestão RH - Resultados` =
+      paste0(Cadeia2, " (", round(Cadeia2/Quantidade*100,1), "%)"),
+    
+    `Objetivos Organizacionais` =
+      paste0(Cadeia3, " (", round(Cadeia3/Quantidade*100,1), "%)")
+  ) %>%
+  
+  select(
+    Dimensao,
+    Quantidade,
+    `Gestão RH - Atividades e Processos`,
+    `Gestão RH - Resultados`,
+    `Objetivos Organizacionais`
+  )
+
+tabela_dimensoes %>%
+  kable(
+    col.names = c(
+      "Dimensão",
+      "Quantidade",
+      "Gestão RH - Atividades e Processos (Qtd/%)",
+      "Gestão RH - Resultados (Qtd/%)",
+      "Objetivos Organizacionais (Qtd/%)"
+    ),
+    align = "ccccc"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,
+    position = "center"
+  )
+```
+
+
+
+
+### Marco Lógico
+```{r, echo=FALSE, warning=FALSE}
+dados_tabela2 %>%
+  mutate(
+    Porcentagem = (Quantidade / sum(Quantidade)) * 100,
+    # Arredonda para 1 casa decimal e adiciona o símbolo de %
+    Porcentagem = paste0(round(Porcentagem, 1), "%")
+  ) %>%
+  kable(
+    col.names = c("Marco Lógico", "Quantidade", "Porcentagem"),
+    align = "cl",
+    format = "html"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,
+    position = "center"
+  )
+
+# Chamar a função
+grafico_indicadores(
+  dados_tabela2,
+  "Marco Lógico",
+  "Quantidade",
+  "Total de Indicadores por Marco Lógico"
+)
+
+
+
+```
+
 
