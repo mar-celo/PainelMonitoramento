@@ -67,6 +67,10 @@ mod_pfgp_ui <- function(id) {
 mod_pfgp_server <- function(id, grafico_compartilhado) {
   shiny::moduleServer(id, function(input, output, session) {
 
+    pfgp_vozes_itens <- readRDS(here::here("data-raw/data_pfgp/pfgp_vozes_itens.rds"))
+    etl_vozes1       <- readRDS(here::here("data-raw/data_pfgp/etl_vozes1.rds"))
+    etl_vozes2       <- readRDS(here::here("data-raw/data_pfgp/etl_vozes2.rds"))
+
     ## indicador 'compartilhado' 1: justiça remuneratória
     render_vozes <- function(nm_indicador){
       reactive({

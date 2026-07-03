@@ -117,6 +117,14 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
   if(length(colsby) > 1) stop("escolha apenas uma variável em colsby")
 
 
+  # cria opcao.f a partir do numérico 1-5 (coluna não existe no .rds bruto)
+  etl_dt <- dplyr::mutate(
+    etl_dt,
+    opcao.f = factor(opcao,
+                     levels = 1:5,
+                     labels = names(.likert_values))
+  )
+
   # agrupando
   etl_dt |>
     dplyr::filter(cod_item %in% q) |>
@@ -126,7 +134,7 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
           c(colsby)
           )
         ),
-      cod_item,item.q2,opcao,opcao.f) |>
+      cod_item, item.q2, opcao, opcao.f) |>
     dplyr::summarise(N = sum(N)) |>
     dplyr::ungroup() |>
     dplyr::group_by(
