@@ -57,12 +57,18 @@ Ao adicionar novo módulo ou arquivo utilitário em `R/`, acrescentá-lo à list
 
 ## Estado Atual dos Módulos
 
-| Arquivo | Abas | Dados |
+| Arquivo | Conteúdo | Dados |
 |---|---|---|
-| `R/mod_capa.R` | — (página inicial) | nenhum |
-| `R/mod_indigenas.R` | 6 (Panorama, Série Histórica, Efetividade/Função, Cargos CCE/FCE, Geografia/Órgãos, Perfil Demográfico) | `data-raw/data_indigenas/` |
-| `R/mod_etnia_lideranca.R` | 4 (Visão Geral, Por Órgão, Suficiência de Vagas, Razão de Equidade) | `data-raw/data_etnia/` |
-| `R/mod_pfgp.R` | Dimensões do PFGP (Dimensão 3 inclui lideranças) | `data-raw/data_pfgp/` |
+| `R/mod_capa.R` | Página inicial com cards de navegação para todos os módulos | nenhum |
+| `R/mod_indigenas.R` | 6 abas: Panorama, Série Histórica, Efetividade/Função, Cargos CCE/FCE, Geografia/Órgãos, Perfil Demográfico | `data-raw/data_indigenas/` |
+| `R/mod_etnia_lideranca.R` | 4 abas: Visão Geral, Por Órgão, Suficiência de Vagas, Razão de Equidade | `data-raw/data_etnia/` |
+| `R/mod_pfgp.R` | Orquestrador PFGP — `navset_card_underline` com 6 dimensões; carrega dados Vozes | `data-raw/data_pfgp/` |
+| `R/mod_pfgp_dim1.R` | Dim 1 — Dimensionamento: equidade de ingresso vs. Censo 2022 (sidebar: orgao_ref + ingr_categoria) | `base_censo.rds`, `base_ingressos.rds` |
+| `R/mod_pfgp_dim2.R` | Dim 2 — Carreiras: exercício descentralizado por cargo, servidor e raça/gênero (sidebar: orgao_ref) | `tab_cargo_transversal.rds`, `tab_ativo_transversal.rds`, `tab_raca_genero_transversal.rds` |
+| `R/mod_pfgp_dim3.R` | Dim 3 — Bem-Estar: cards Turnover + Absenteísmo (em alinhamento) + Vozes segurança psicológica | `etl_vozes1.rds`, `etl_vozes2.rds`, `pfgp_vozes_itens.rds` |
+| `R/mod_pfgp_dim4.R` | Dim 4 — Lideranças: 4 séries CCE/FCE + Vozes capacitação/desempenho (recebe `grafico_compartilhado`) | `df_liderancas.rds` + Vozes |
+| `R/mod_pfgp_dim5.R` | Dim 5 — Remuneração: card Gini/Lorenz (metodologia) + 4 gráficos Vozes remuneração/engajamento | Vozes |
+| `R/mod_pfgp_dim6.R` | Dim 6 — Aposentação: value boxes abono permanência (69.518 / 12,31%) + 4 cards futuros | nenhum (webscraping PEP a implementar) |
 
 Todos registrados em `R/app_server.R` e `R/app_ui.R`.
 
@@ -73,10 +79,24 @@ Monitoramento   ← nav_menu()
   Indígenas na APF  ← mod_indigenas_ui("indigenas")   value="indigenas"
   Raça e Liderança  ← mod_etnia_lideranca_ui("etnia") value="etnia"
   PFGP              ← mod_pfgp_ui("pfgp")             value="pfgp"
+    └── navset_card_underline interno com 6 nav_panel (pfgp_1 … pfgp_6)
 Sobre           ← nav_menu() com texto estático
 ```
 
 `page_navbar` tem `id = "main_nav"` — necessário para `updateNavbarPage()`.
+
+### Arquitetura PFGP — passagem de reativos
+
+`mod_pfgp_server` recebe `grafico_compartilhado` de `mod_etnia_lideranca_server` (via `app_server.R`) e cria `render_vozes(nm_indicador)` — factory de reativos Vozes compartilhada entre as dimensões. Cada `mod_pfgp_dimN_server` recebe os reativos necessários como parâmetros.
+
+### Dados Vozes — `data-raw/data_pfgp/`
+| Arquivo | Colunas principais |
+|---|---|
+| `pfgp_vozes_itens.rds` | `indicador`, `cod_item_vozes1`, `cod_item_vozes2` |
+| `etl_vozes1.rds` | `cod_item`, `opcao` (1–5), `N`, `item.q2` |
+| `etl_vozes2.rds` | idem |
+
+**Regra:** `opcao.f` (factor com labels Likert) **não existe nos .rds brutos** — é criada internamente por `likert_vozes()` em `utils_pfgp.R` a partir de `opcao` (1–5).
 
 ### Dados disponíveis — `data-raw/data_indigenas/`
 `df_efetivos.rds`, `df_etnia.rds`, `df_funcao.rds`, `df_funcao_efetivos.rds`, `df_funcao_total.rds`, `df_indigenas_sit.rds`, `df_indigenas_uf.rds`, `df_mapa_final.rds`, `df_natjur.rds`, `df_orgao.rds`, `df_piramide.rds`, `df_piramide_indigena.rds`, `df_saidas.rds`, `df_treemap_ind.rds`, `serie_cotas.rds`, `serie_ingressos.rds`
@@ -85,7 +105,7 @@ Sobre           ← nav_menu() com texto estático
 `Tab_inds_1_e_2.rds`, `Tab.rds`, `Tab_sup.rds`, `Tab_ind3.rds`, `Tab_inds_4_mes.rds`, `Tab_inds_4_orgaos.rds`, `Tab_inds_5_mes.rds`, `Tab_inds_5_niveis.rds`, `Tab_inds_5_orgaos.rds`, `data_1a12.rds`, `data_13a17.rds`, `subdata1a12.rds`, `subdata_13a17.rds`
 
 ### Dados disponíveis — `data-raw/data_pfgp/`
-`base_censo.rds`, `base_ingressos.rds`, `df_liderancas.rds`, `tab_ativo_transversal.rds`, `tab_cargo_transversal.rds`, `tab_raca_genero_transversal.rds`
+`base_censo.rds`, `base_ingressos.rds`, `df_liderancas.rds`, `tab_ativo_transversal.rds`, `tab_cargo_transversal.rds`, `tab_raca_genero_transversal.rds`, `pfgp_vozes_itens.rds`, `etl_vozes1.rds`, `etl_vozes2.rds`
 
 ---
 
@@ -98,18 +118,26 @@ R/
   app_ui.R               ← page_navbar() + registra todos os nav_panel()
   app_server.R           ← chama mod_*_server() de cada módulo
   app_config.R           ← app_sys() e get_golem_config() — não modificar
-  mod_capa.R             ← página inicial com links de navegação
+  mod_capa.R             ← página inicial com cards de navegação (3 módulos)
   mod_indigenas.R        ← módulo indígenas (UI + Server)
   mod_etnia_lideranca.R  ← módulo raça/liderança (UI + Server)
-  mod_pfgp.R             ← módulo PFGP (UI + Server)
+  mod_pfgp.R             ← orquestrador PFGP: carrega Vozes + chama dim1-6
+  mod_pfgp_dim1.R        ← Dim 1: Dimensionamento da Força de Trabalho
+  mod_pfgp_dim2.R        ← Dim 2: Carreiras, Cargos, Progressão e Promoção
+  mod_pfgp_dim3.R        ← Dim 3: Alocação, Bem-Estar (em alinhamento + Vozes)
+  mod_pfgp_dim4.R        ← Dim 4: Lideranças + Vozes capacitação/desempenho
+  mod_pfgp_dim5.R        ← Dim 5: Remuneração — Gini/Lorenz + Vozes
+  mod_pfgp_dim6.R        ← Dim 6: Aposentação — abono permanência + cards futuros
   utils_ui.R             ← helper .spin() — spinner Gov.br para todos os outputs
-  utils_pfgp.R           ← ggplot_cat(), ggplotly_c(), paletas e tema base
+  utils_pfgp.R           ← ggplot_cat(), ggplotly_c(), likert_vozes(), paletas
   docs_etnia/            ← análises de referência (index.Rmd) — não são módulos
   docs_indigenas/        ← análises de referência (index.qmd, index.rmd)
 data-raw/
   data_indigenas/        ← dados do módulo indígenas (.rds)
   data_etnia/            ← dados do módulo raça/liderança (.rds)
-  data_pfgp/             ← dados do módulo PFGP (.rds)
+  data_pfgp/             ← dados do módulo PFGP + Vozes (.rds)
+docs/
+  deploy.r               ← comando rsconnect::deployApp atualizado (fonte da verdade)
 dev/
   run_dev.R              ← script principal de desenvolvimento
   02_dev.R               ← scaffolding (golem::add_module, etc.)
@@ -123,10 +151,12 @@ Cada novo módulo: par `mod_<nome>_ui(id)` + `mod_<nome>_server(id)` em `R/mod_<
 
 **`R/utils_ui.R`** — exporta `.spin(x)`: envolve qualquer output com `shinycssloaders::withSpinner(type=6, color="#1351b4")`. Usar em todos os `plotlyOutput`, `DTOutput`, `echarts4rOutput` dos módulos.
 
-**`R/utils_pfgp.R`** — funções de visualização para `mod_pfgp.R`:
-- `ggplot_cat(...)`: `ggplot2::ggplot(...)` + tema `.plot_config`. **Não inclui `scale_fill_manual`/`scale_color_manual`** — escalas manuais quebram `ggplotly()`.
-- `ggplotly_c(gg_obj)`: converte ggplot → plotly limpando nomes duplicados na legenda.
-- `.pal_primaria`, `.pal_complementar`: paletas de cores Gov.br.
+**`R/utils_pfgp.R`** — funções de visualização para os módulos PFGP:
+- `ggplot_cat(...)`: `ggplot2::ggplot(...)` + `.plot_fill_cat` + `.plot_color_cat` + tema `.plot_config`.
+- `ggplot_likert(...)`: ggplot com `scale_fill_manual(values = .likert_values)` — escala divergente 5 pontos.
+- `ggplotly_c(gg_obj)`: converte ggplot → plotly limpando nomes duplicados na legenda; guard contra `tr$name == NULL`.
+- `likert_vozes(etl_dt, q, concordancia, colsby)`: cria `opcao.f` internamente (factor 1–5 → labels Likert) e retorna ggplot de barras empilhadas ou dodge. **Não esperar `opcao.f` nos dados brutos.**
+- `.pal_primaria`, `.pal_complementar`, `.likert_values`: paletas de cores Gov.br e Likert.
 
 **Regra importante:** Nunca colocar funções auxiliares em `data/` — esses scripts não vão no bundle do shinyapps.io. Todo helper deve estar em `R/`.
 
@@ -144,8 +174,10 @@ O servidor usa **bslib 0.9.0** (local usa 0.10.0) e locale **C.UTF-8**. Diferen�
 | `could not find function "%>%"` | magrittr não no DESCRIPTION | Usar pipe nativo `\|>` (disponível R ≥ 4.1) |
 | `\|> as.numeric` inválido | Pipe nativo exige `()` | `\|> as.numeric()` |
 | `could not find function "filter"` | dplyr não resolvido sem `load_all()` | Prefixar com `dplyr::` em todo código de módulo |
-| `subscript out of bounds` no ggplotly | `scale_fill_manual`/`scale_color_manual` em `ggplotly()` | Usar `ggplot_cat()` de `utils_pfgp.R` (sem escalas manuais) |
+| `subscript out of bounds` no ggplotly | ggplot2 4.0+ incompatível com plotly < 4.12.0 | `plotly (>= 4.12.0)` no DESCRIPTION |
 | `size=` em `geom_line` | Depreciado no ggplot2 3.4+ | Usar `linewidth=` |
+| `object 'opcao.f' not found` em `likert_vozes` | Coluna não existe nos .rds brutos do Vozes | `likert_vozes()` cria `opcao.f` internamente — não adicionar nos dados |
+| `could not find function "mod_pfgp_dimN_ui"` | Arquivos `mod_pfgp_dim*.R` não incluídos no deploy | Manter todos os 6 arquivos na lista `appFiles` do `docs/deploy.r` |
 
 **Navegação entre módulos (mod_capa):** `updateNavbarPage` requer a sessão raiz. Assinatura: `mod_capa_server(id, root_session = NULL)`. Em `app_server.R`: `mod_capa_server("capa", root_session = session)`.
 
