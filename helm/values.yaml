@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Helm values — PainelMonitoramento
+# Os tokens #{...}# são substituídos pelo Replace Tokens no pipeline antes
+# do helm upgrade, usando as variáveis do variable group e do build.
+# ─────────────────────────────────────────────────────────────────────────────
+
+image:
+  repository: #{DOCKER_REGISTRY_URL}#/#{DOCKER_REGISTRY_PROJECT}#/painelmonitoramento
+  tag: "#{APPLICATION_VERSION}#"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: "#{IMAGE_PULL_SECRETS_NAME}#"
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3838
+
+ingress:
+  enabled: true
+  # Altere para o DNS real do ambiente
+  host: painel-monitoramento.sistema.gov.br
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1500m"
+
+env:
+  - name: PORT
+    value: "3838"
+  - name: HOST
+    value: "0.0.0.0"
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 3838
+  initialDelaySeconds: 45
+  periodSeconds: 15
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 3838
+  initialDelaySeconds: 90
+  periodSeconds: 30
+  failureThreshold: 3

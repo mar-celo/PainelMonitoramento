@@ -1,104 +1,221 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Pipeline CI/CD — PainelMonitoramento
-# Organização: ColaboraGov-MGI-SGP
-# Projeto: Plataforma Monitoramento DIGID
+# Pipeline CI/CD — PainelMonitoramento (R Shiny / Golem)
 #
-# Pré-requisitos no Azure DevOps:
-#   1. Service Connection Docker Registry chamada "acr-painel"
-#      (Azure Container Registry > nome do seu ACR)
-#   2. Service Connection Kubernetes chamada "rancher-painel"
-#      (Generic/Kubeconfig do cluster Rancher)
-#   3. Variável de pipeline "ACR_ENDPOINT" com o endpoint do ACR
-#      ex: meuacr.azurecr.io
+# Pré-requisitos no projeto Azure DevOps:
+#   Service connections:
+#     - "Harbor Registry"  → Docker Registry → registry.api.gov.br
+#     - "cluster-dev"      → Kubernetes → KubeConfig do cluster de Dev
+#     - "cluster-hom"      → Kubernetes → KubeConfig do cluster de Homolog
+#     - "cluster-prd"      → Kubernetes → KubeConfig do cluster de Prod
+#   Environments (Pipelines > Environments, com aprovadores):
+#     - Development, Homologation, Production
+#   Variable group "painel-monitoramento-vars" com:
+#     - DOCKER_REGISTRY_PROJECT      → projeto Harbor (ex: digid)
+#     - KUBE_NAMESPACE               → namespace no cluster (ex: monitoramento)
+#     - IMAGE_PULL_SECRETS_NAME      → nome do secret K8s de pull (ex: harbor-secret)
+#     - RANCHER_IMAGE_PULL_USERNAME  → usuário Harbor para pull no Rancher
+#     - RANCHER_IMAGE_PULL_TOKEN     → token Harbor para pull no Rancher
 # ─────────────────────────────────────────────────────────────────────────────
 
 trigger:
   branches:
     include:
-      - master
-  paths:
-    exclude:
-      - "docs/**"
-      - "dev/**"
-      - "*.md"
-
-pr: none
+    - master
+    - develop
+    - release/*
 
 variables:
-  IMAGE_NAME: "painelmonitoramento"
-  IMAGE_TAG: "$(Build.BuildId)"
-  FULL_IMAGE: "$(ACR_ENDPOINT)/$(IMAGE_NAME):$(IMAGE_TAG)"
-  K8S_NAMESPACE: "monitoramento"
+- group: painel-monitoramento-vars
+- name: DOCKER_REGISTRY_URL
+  value: registry.api.gov.br
+- name: DOCKER_IMAGE_NAME
+  value: painelmonitoramento
+- name: PROJECT_NAME
+  value: painelmonitoramento
+- name: HELM_CHART
+  value: oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart
+- name: HELM_CHART_VERSION
+  value: 1.0.1+69
 
+# ── Stage 1: Build e Push da imagem Docker para o Harbor ─────────────────────
 stages:
-  # ── Etapa 1: Build & Push da imagem Docker ─────────────────────────────────
-  - stage: Build
-    displayName: "Build e Push — Docker"
-    jobs:
-      - job: BuildAndPush
-        displayName: "Construir e enviar imagem para ACR"
-        pool:
-          vmImage: "ubuntu-latest"
-        steps:
+- stage: build
+  displayName: "Build — imagem Docker para Harbor"
+  condition: |
+    or(
+      eq(variables['Build.SourceBranchName'], 'master'),
+      eq(variables['Build.SourceBranchName'], 'develop'),
+      contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+    )
+  jobs:
+  - job: docker_build
+    displayName: "Build e Push para Harbor"
+    pool:
+      vmImage: ubuntu-24.04
+    steps:
+    - task: Docker@2
+      displayName: "Build e push (tags: BuildId + latest)"
+      inputs:
+        command: buildAndPush
+        containerRegistry: Harbor Registry
+        repository: $(DOCKER_REGISTRY_PROJECT)/$(DOCKER_IMAGE_NAME)
+        dockerfile: Dockerfile
+        tags: |
+          $(Build.BuildId)
+          latest
+
+# ── Stage 2: Deploy para Desenvolvimento (branch: develop) ───────────────────
+- stage: deploy_dev
+  displayName: "Deploy — Desenvolvimento"
+  dependsOn: build
+  condition: and(succeeded('build'), eq(variables['Build.SourceBranchName'], 'develop'))
+  jobs:
+  - deployment: deploy
+    displayName: "Helm upgrade — Development"
+    environment: Development
+    pool:
+      vmImage: ubuntu-24.04
+    strategy:
+      runOnce:
+        deploy:
+          steps:
           - checkout: self
-            displayName: "Checkout do código"
 
-          - task: Docker@2
-            displayName: "Build e Push para Azure Container Registry"
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
+            displayName: "Substituir tokens em helm/values.yaml"
             inputs:
-              command: buildAndPush
-              repository: $(IMAGE_NAME)
-              dockerfile: Dockerfile
-              containerRegistry: "acr-painel"   # nome do service connection
-              tags: |
-                $(IMAGE_TAG)
-                latest
+              targetFiles: helm/values.yaml
+              tokenPrefix: '#{'
+              tokenSuffix: '}#'
+            env:
+              APPLICATION_VERSION: $(Build.BuildId)
+              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
 
-          # Publica o manifesto k8s como artefato para o stage de deploy
-          - publish: k8s
-            artifact: k8s-manifests
-            displayName: "Publicar manifestos Kubernetes"
+          - bash: |
+              helm registry login $(DOCKER_REGISTRY_URL) \
+                --username $(RANCHER_IMAGE_PULL_USERNAME) \
+                --password $(RANCHER_IMAGE_PULL_TOKEN)
+            displayName: "Helm registry login (Harbor OCI)"
+            env:
+              HELM_EXPERIMENTAL_OCI: 1
 
-  # ── Etapa 2: Deploy no Rancher (Kubernetes) ────────────────────────────────
-  - stage: Deploy
-    displayName: "Deploy — Rancher"
-    dependsOn: Build
-    condition: succeeded()
-    jobs:
-      - deployment: DeployToRancher
-        displayName: "Aplicar deploy no cluster Rancher"
-        pool:
-          vmImage: "ubuntu-latest"
-        environment: "producao"          # cria em Pipelines > Environments
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - download: current
-                  artifact: k8s-manifests
-                  displayName: "Download dos manifestos"
+          - task: HelmDeploy@0
+            displayName: "Helm upgrade — Development"
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: cluster-dev
+              namespace: $(KUBE_NAMESPACE)
+              command: upgrade
+              chartType: Name
+              chartName: $(HELM_CHART)
+              chartVersion: $(HELM_CHART_VERSION)
+              releaseName: $(PROJECT_NAME)
+              valueFile: helm/values.yaml
+              install: true
+              arguments: --wait --timeout 10m
 
-                # Cria o namespace se não existir
-                - task: Kubernetes@1
-                  displayName: "Criar namespace (se necessário)"
-                  inputs:
-                    connectionType: "Kubernetes Service Connection"
-                    kubernetesServiceEndpoint: "rancher-painel"  # service connection
-                    command: apply
-                    arguments: >
-                      --namespace $(K8S_NAMESPACE)
-                      -f https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/admin/namespace-dev.json
-                  continueOnError: true
+# ── Stage 3: Deploy para Homologação (branch: release/*) ─────────────────────
+- stage: deploy_hom
+  displayName: "Deploy — Homologação"
+  dependsOn: build
+  condition: and(succeeded('build'), contains(variables['Build.SourceBranch'], 'refs/heads/release/'))
+  jobs:
+  - deployment: deploy
+    displayName: "Helm upgrade — Homologation"
+    environment: Homologation
+    pool:
+      vmImage: ubuntu-24.04
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
 
-                # Aplica o Deployment e Service com a nova imagem
-                - task: KubernetesManifest@0
-                  displayName: "Deploy da aplicação"
-                  inputs:
-                    action: deploy
-                    kubernetesServiceConnection: "rancher-painel"
-                    namespace: $(K8S_NAMESPACE)
-                    manifests: |
-                      $(Pipeline.Workspace)/k8s-manifests/deployment.yaml
-                      $(Pipeline.Workspace)/k8s-manifests/service.yaml
-                    containers: |
-                      $(FULL_IMAGE)
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
+            displayName: "Substituir tokens em helm/values.yaml"
+            inputs:
+              targetFiles: helm/values.yaml
+              tokenPrefix: '#{'
+              tokenSuffix: '}#'
+            env:
+              APPLICATION_VERSION: $(Build.BuildId)
+              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
+
+          - bash: |
+              helm registry login $(DOCKER_REGISTRY_URL) \
+                --username $(RANCHER_IMAGE_PULL_USERNAME) \
+                --password $(RANCHER_IMAGE_PULL_TOKEN)
+            displayName: "Helm registry login (Harbor OCI)"
+            env:
+              HELM_EXPERIMENTAL_OCI: 1
+
+          - task: HelmDeploy@0
+            displayName: "Helm upgrade — Homologation"
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: cluster-hom
+              namespace: $(KUBE_NAMESPACE)
+              command: upgrade
+              chartType: Name
+              chartName: $(HELM_CHART)
+              chartVersion: $(HELM_CHART_VERSION)
+              releaseName: $(PROJECT_NAME)
+              valueFile: helm/values.yaml
+              install: true
+              arguments: --wait --timeout 10m
+
+# ── Stage 4: Deploy para Produção (branch: master) ───────────────────────────
+- stage: deploy_prd
+  displayName: "Deploy — Produção"
+  dependsOn: build
+  condition: and(succeeded('build'), eq(variables['Build.SourceBranchName'], 'master'))
+  jobs:
+  - deployment: deploy
+    displayName: "Helm upgrade — Production"
+    environment: Production
+    pool:
+      vmImage: ubuntu-24.04
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
+            displayName: "Substituir tokens em helm/values.yaml"
+            inputs:
+              targetFiles: helm/values.yaml
+              tokenPrefix: '#{'
+              tokenSuffix: '}#'
+            env:
+              APPLICATION_VERSION: $(Build.BuildId)
+              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
+
+          - bash: |
+              helm registry login $(DOCKER_REGISTRY_URL) \
+                --username $(RANCHER_IMAGE_PULL_USERNAME) \
+                --password $(RANCHER_IMAGE_PULL_TOKEN)
+            displayName: "Helm registry login (Harbor OCI)"
+            env:
+              HELM_EXPERIMENTAL_OCI: 1
+
+          - task: HelmDeploy@0
+            displayName: "Helm upgrade — Production"
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: cluster-prd
+              namespace: $(KUBE_NAMESPACE)
+              command: upgrade
+              chartType: Name
+              chartName: $(HELM_CHART)
+              chartVersion: $(HELM_CHART_VERSION)
+              releaseName: $(PROJECT_NAME)
+              valueFile: helm/values.yaml
+              install: true
+              arguments: --wait --timeout 10m
