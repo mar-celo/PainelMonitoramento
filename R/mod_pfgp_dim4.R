@@ -95,11 +95,11 @@ mod_pfgp_dim4_server <- function(id,
 
     output$serie_lidera_mulheres <- plotly::renderPlotly({
       serie_lid_mulheres |>
-        ggplot_cat(aes(x = ano, y = p_mulheres, colour = nivel_fce_cce)) +
-        ylim(c(0, 1.2 * max_p_mulheres)) +
-        geom_line(linewidth = .8) +
-        geom_point(size = 2) +
-        labs(colour = NULL, y = "Percentual de mulheres", x = NULL) -> gr_lid_mulheres
+        ggplot_cat(ggplot2::aes(x = ano, y = p_mulheres, colour = nivel_fce_cce)) +
+        ggplot2::ylim(c(0, 1.2 * max_p_mulheres)) +
+        ggplot2::geom_line(linewidth = .8) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::labs(colour = NULL, y = "Percentual de mulheres", x = NULL) -> gr_lid_mulheres
 
       ggplotly_c(gr_lid_mulheres)
     })
@@ -119,11 +119,11 @@ mod_pfgp_dim4_server <- function(id,
 
     output$serie_lidera_efetivos <- plotly::renderPlotly({
       serie_lid_efetivos |>
-        ggplot_cat(aes(x = ano, y = p_efet, colour = nivel_fce_cce)) +
-        ylim(c(0, 1.2 * max_p_efet)) +
-        geom_line(linewidth = .8) +
-        geom_point(size = 2) +
-        labs(colour = NULL, y = "Percentual de efetivos", x = NULL) -> gr_lid_efetivos
+        ggplot_cat(ggplot2::aes(x = ano, y = p_efet, colour = nivel_fce_cce)) +
+        ggplot2::ylim(c(0, 1.2 * max_p_efet)) +
+        ggplot2::geom_line(linewidth = .8) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::labs(colour = NULL, y = "Percentual de efetivos", x = NULL) -> gr_lid_efetivos
 
       ggplotly_c(gr_lid_efetivos)
     })
@@ -145,11 +145,11 @@ mod_pfgp_dim4_server <- function(id,
 
     output$serie_lidera_origem <- plotly::renderPlotly({
       serie_origem_lid |>
-        ggplot_cat(aes(x = ano, y = p_lid_13a18, colour = REGIAO_NATURALIDADE)) +
-        ylim(c(0, 1.2 * max_p_efet_origem)) +
-        geom_line(linewidth = .8) +
-        geom_point(size = 2) +
-        labs(colour = NULL, y = "Percentual com FCE/CCE 13 ou maior", x = NULL) -> gr_lid_origem
+        ggplot_cat(ggplot2::aes(x = ano, y = p_lid_13a18, colour = REGIAO_NATURALIDADE)) +
+        ggplot2::ylim(c(0, 1.2 * max_p_efet_origem)) +
+        ggplot2::geom_line(linewidth = .8) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::labs(colour = NULL, y = "Percentual com FCE/CCE 13 ou maior", x = NULL) -> gr_lid_origem
 
       ggplotly_c(gr_lid_origem)
     })

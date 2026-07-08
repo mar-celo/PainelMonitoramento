@@ -298,25 +298,25 @@ mod_etnia_lideranca_server <- function(id) {
 
       dt_decreto <- zoo::as.yearmon("Mar 2023","%b %Y")
       Tab_serie |>
-        ggplot_cat(aes(x = anomes,
+        ggplot_cat(ggplot2::aes(x = anomes,
                        y = p_negras,
                        col = decreto_nivel)) +
-        geom_line() +
-        geom_point(size = 2.2,show.legend = F) +
+        ggplot2::geom_line() +
+        ggplot2::geom_point(size = 2.2,show.legend = F) +
         # guides(color = guide_legend(override.aes = list(linetype = 0))) +
-        geom_vline(aes(xintercept = dt_decreto,
+        ggplot2::geom_vline(ggplot2::aes(xintercept = dt_decreto,
                        linetype = "Decreto 11.443/2023")
         )+
-        geom_hline(aes(yintercept = 30,
+        ggplot2::geom_hline(ggplot2::aes(yintercept = 30,
                        linetype = "Meta: 30%"),
                    col = .pal_primaria["principal"]
         ) +
-        scale_linetype_manual(
+        ggplot2::scale_linetype_manual(
           values = c( "Decreto 11.443/2023" = "dashed",
                       "Meta: 30%" = 'solid')
         ) +
-        # ylim(0,1.1*max(comissionados_negros_mes$p_negra)) +
-        labs(x = "",col = "",y = "",linetype = "") -> p_neg_mes
+        # ggplot2::ylim(0,1.1*max(comissionados_negros_mes$p_negra)) +
+        ggplot2::labs(x = "",col = "",y = "",linetype = "") -> p_neg_mes
 
       ggplotly_c(p_neg_mes)
 
@@ -464,12 +464,12 @@ $$A \\geq \\frac{0.3T - N}{1-0.3}$$
       df_long |>
         dplyr::filter(nome_cor_origem_etnica %in%
                  c("BRANCA","PRETA","PARDA","Negras")) |>
-        ggplot_cat(aes(x = anomes, y = razao, col = nome_cor_origem_etnica)) +
-        geom_line() +
-        geom_point(size = 2.2) +
-        geom_hline(yintercept = 1, linetype = 2) +
-        labs(x = "", col = "", y = "") +
-        facet_wrap(nivel_label ~., nrow = 1) -> gf
+        ggplot_cat(ggplot2::aes(x = anomes, y = razao, col = nome_cor_origem_etnica)) +
+        ggplot2::geom_line() +
+        ggplot2::geom_point(size = 2.2) +
+        ggplot2::geom_hline(yintercept = 1, linetype = 2) +
+        ggplot2::labs(x = "", col = "", y = "") +
+        ggplot2::facet_wrap(nivel_label ~., nrow = 1) -> gf
 
       ggplotly_c(gf)
 

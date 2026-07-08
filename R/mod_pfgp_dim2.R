@@ -105,13 +105,14 @@ mod_pfgp_dim2_server <- function(id,
         dplyr::filter(sg_orgao == ft_orgao) |>
         dplyr::mutate(p_cargo_transv = round(100 * n_transversais / N, 2),
                       periodo        = substr(compet, 1, 4) |> as.numeric())
+      req(nrow(tab_filtro) > 0)
 
       tab_filtro |>
-        ggplot_cat(aes(x = periodo, y = p_cargo_transv)) +
-        ylim(c(0, 1.2 * max(tab_filtro$p_cargo_transv))) +
-        geom_line(linewidth = 0.8) +
-        geom_point(size = 2) +
-        labs(colour = NULL, y = NULL, x = NULL) -> gr_cargos_descent
+        ggplot_cat(ggplot2::aes(x = periodo, y = p_cargo_transv)) +
+        ggplot2::ylim(c(0, 1.2 * max(tab_filtro$p_cargo_transv, na.rm = TRUE))) +
+        ggplot2::geom_line(linewidth = 0.8) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::labs(colour = NULL, y = NULL, x = NULL) -> gr_cargos_descent
 
       ggplotly_c(gr_cargos_descent)
     })
@@ -123,13 +124,14 @@ mod_pfgp_dim2_server <- function(id,
       tab_filtro <- dplyr::filter(tab_ativo_transversal, sg_orgao == ft_orgao, transversal) |>
         dplyr::mutate(periodo      = substr(compet, 1, 4) |> as.numeric(),
                       p_serv_transv = round(100 * N / N_total, 2))
+      req(nrow(tab_filtro) > 0)
 
       tab_filtro |>
-        ggplot_cat(aes(x = periodo, y = p_serv_transv, col = no_sit_serv)) +
-        ylim(c(0, 1.2 * max(tab_filtro$p_serv_transv))) +
-        geom_line(linewidth = 0.8) +
-        geom_point(size = 2) +
-        labs(colour = NULL, y = NULL, x = NULL) -> gr_serv_descent
+        ggplot_cat(ggplot2::aes(x = periodo, y = p_serv_transv, col = no_sit_serv)) +
+        ggplot2::ylim(c(0, 1.2 * max(tab_filtro$p_serv_transv, na.rm = TRUE))) +
+        ggplot2::geom_line(linewidth = 0.8) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::labs(colour = NULL, y = NULL, x = NULL) -> gr_serv_descent
 
       ggplotly_c(gr_serv_descent)
     })
@@ -147,6 +149,7 @@ mod_pfgp_dim2_server <- function(id,
       }
 
       tab_filtro <- dplyr::filter(tab_filtro, periodo > 2019)
+      req(nrow(tab_filtro) > 0)
 
       tab_filtro <-
         tab_filtro |>
@@ -156,11 +159,11 @@ mod_pfgp_dim2_server <- function(id,
         dplyr::mutate(p_raca_genero = round(100 * N / N_total, 2))
 
       tab_filtro |>
-        ggplot_cat(aes(x = periodo, y = p_raca_genero, col = f_cor_origem_etnica)) +
-        geom_line(linewidth = 0.8) +
-        geom_point(size = 2) +
-        labs(col = NULL, y = "Percentual de Raça e Gênero", x = NULL) +
-        facet_wrap(nm_transv_sexo ~.) -> gr_racagenero_descent
+        ggplot_cat(ggplot2::aes(x = periodo, y = p_raca_genero, col = f_cor_origem_etnica)) +
+        ggplot2::geom_line(linewidth = 0.8) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::labs(col = NULL, y = "Percentual de Raça e Gênero", x = NULL) +
+        ggplot2::facet_wrap(nm_transv_sexo ~.) -> gr_racagenero_descent
 
       ggplotly_c(gr_racagenero_descent)
     })

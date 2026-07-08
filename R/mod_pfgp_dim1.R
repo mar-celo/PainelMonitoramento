@@ -178,13 +178,13 @@ mod_pfgp_dim1_server <- function(id) {
         ) -> tab_filtro
 
       tab_filtro |>
-        ggplot_cat(aes(x = categoria, y = p_categ, fill = universo)) +
-        geom_col(position = "stack") +
-        geom_text(aes(label = paste0(abs(p_categ), "%")),
-                  size = 5, col = "white", face = "bold",
-                  position = position_stack(vjust = 0.5)) +
-        coord_flip() +
-        labs(x = NULL, y = NULL, fill = NULL) -> gr_ingr
+        ggplot_cat(ggplot2::aes(x = categoria, y = p_categ, fill = universo)) +
+        ggplot2::geom_col(position = "stack") +
+        ggplot2::geom_text(ggplot2::aes(label = paste0(abs(p_categ), "%")),
+                  size = 5, col = "white", fontface = "bold",
+                  position = ggplot2::position_stack(vjust = 0.5)) +
+        ggplot2::coord_flip() +
+        ggplot2::labs(x = NULL, y = NULL, fill = NULL) -> gr_ingr
 
       ggplotly_c(gr_ingr)
     })
@@ -209,13 +209,13 @@ mod_pfgp_dim1_server <- function(id) {
         ) -> tab_filtro
 
       tab_filtro |>
-        ggplot_cat(aes(x = categoria, y = p_categ, fill = universo)) +
-        geom_col(position = "stack") +
-        geom_text(aes(label = paste0(abs(p_categ), "%")),
-                  size = 5, col = "white", face = "bold",
-                  position = position_stack(vjust = 0.5)) +
-        coord_flip() +
-        labs(x = NULL, y = NULL, fill = NULL) -> gr_ingr
+        ggplot_cat(ggplot2::aes(x = categoria, y = p_categ, fill = universo)) +
+        ggplot2::geom_col(position = "stack") +
+        ggplot2::geom_text(ggplot2::aes(label = paste0(abs(p_categ), "%")),
+                  size = 5, col = "white", fontface = "bold",
+                  position = ggplot2::position_stack(vjust = 0.5)) +
+        ggplot2::coord_flip() +
+        ggplot2::labs(x = NULL, y = NULL, fill = NULL) -> gr_ingr
 
       ggplotly_c(gr_ingr)
     })
@@ -228,11 +228,11 @@ mod_pfgp_dim1_server <- function(id) {
 
       base_ingressos_show |>
         dplyr::filter(sg_orgao == ft_orgao, fator == ft_categ) |>
-        ggplot_cat(aes(x = ano_ingresso, y = eq_ingresso, col = categoria)) +
-        geom_line(linewidth = 0.8) +
-        geom_hline(yintercept = 1, linewidth = 1) +
-        geom_point(size = 2) +
-        labs(x = NULL, y = NULL, col = NULL) -> gr_ingr
+        ggplot_cat(ggplot2::aes(x = ano_ingresso, y = eq_ingresso, col = categoria)) +
+        ggplot2::geom_line(linewidth = 0.8) +
+        ggplot2::geom_hline(yintercept = 1, linewidth = 1) +
+        ggplot2::geom_point(size = 2) +
+        ggplot2::labs(x = NULL, y = NULL, col = NULL) -> gr_ingr
 
       ggplotly_c(gr_ingr)
     })

@@ -4,12 +4,9 @@
 # Extraído de data/setup_rmd.R para disponibilização no pacote
 # ==============================================================================
 
-### opções de tamanhos de texto dos itens (eixo, legendas, etc)
-txt_size <- 9
-
 # Paletas de cores
 .pal_primaria <- c(
-  azul = "#0000AA",
+  azul = "#004587",
   ponto     = "#FF7800",
   principal = "#00A100"
 )
@@ -93,7 +90,7 @@ ggplot_likert <- function(...){
   ggplot2::ggplot(...) +
     ggplot2::scale_fill_manual(values = .likert_values) +
     ggplot2::theme_minimal() +
-    ggplot2::theme(text = ggplot2::element_text(size = txt_size),
+    ggplot2::theme(text = ggplot2::element_text(size = .txt_size),
                    legend.position = "bottom",
                    legend.direction = "horizontal") #+
 
@@ -129,8 +126,8 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
   etl_dt |>
     dplyr::filter(cod_item %in% q) |>
     dplyr::group_by(
-      across(
-        all_of(
+      dplyr::across(
+        dplyr::all_of(
           c(colsby)
           )
         ),
@@ -138,8 +135,8 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     dplyr::summarise(N = sum(N)) |>
     dplyr::ungroup() |>
     dplyr::group_by(
-      across(
-        all_of(
+      dplyr::across(
+        dplyr::all_of(
           c(colsby)
           )
         ),
@@ -150,15 +147,15 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
   # alterações para concordancia = T ou com algum colsby
   if(concordancia | !is.null(colsby)){
     # define a posição das colunas a depender e concordancia e colsby
-    posicao_barras <- position_dodge()
+    posicao_barras <- ggplot2::position_dodge()
 
     # define a posição das labels a depender da concordancia e colsby
-    posicao_texto <- position_dodge(width = 0.9)
+    posicao_texto <- ggplot2::position_dodge(width = 0.9)
 
 
     # setando nomes das colunas em 'colsby'
     if(!is.null(colsby)){
-      setnames(etl_filter,colsby,'colsby')
+      data.table::setnames(etl_filter,colsby,'colsby')
       etl_filter <- dplyr::filter(etl_filter,!colsby %in% c(NA,""))
       etl_filter <- dplyr::mutate(etl_filter,opcao.f = as.character(colsby))
     }else{
@@ -179,7 +176,7 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     p_base <-
       # iniciando ggplot
       etl_filter |>
-      ggplot_cat(aes(x = item.q2,
+      ggplot_cat(ggplot2::aes(x = item.q2,
                      fill = opcao.f,
                      y = p))
 
@@ -188,16 +185,16 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
   }else{
 
     # define a posição das colunas a depender da concordancia e colsby
-    posicao_barras <- position_stack(reverse = T)
+    posicao_barras <- ggplot2::position_stack(reverse = T)
 
     # define a posição das labels a depender da concordancia e colsby
-    posicao_texto <- position_stack(reverse = T,vjust = 0.5)
+    posicao_texto <- ggplot2::position_stack(reverse = T,vjust = 0.5)
 
     # plot base
     p_base <-
       # iniciando ggplot
       etl_filter |>
-      ggplot_likert(aes(x = item.q2,
+      ggplot_likert(ggplot2::aes(x = item.q2,
                         fill = opcao.f,
                         y = p))
 
@@ -206,11 +203,11 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
   p_base +
 
     # criando colunas empilhadas
-    geom_col(position = posicao_barras) +
+    ggplot2::geom_col(position = posicao_barras) +
 
     # incluindo labels com os % (se maiores que 5%)
-    geom_text(
-      aes(
+    ggplot2::geom_text(
+      ggplot2::aes(
         label = ifelse(p < 5,
                        "",
                        paste0(round(p,0),"%")
@@ -222,13 +219,13 @@ likert_vozes <- function(etl_dt,q,concordancia = F,colsby = NULL){
     ) +
 
     # eixos sem títulos
-    labs(x = "",y = "",fill = "") +
+    ggplot2::labs(x = "",y = "",fill = "") +
 
     # labels e quebras do eixo y
-    scale_y_continuous(breaks = quebras_y,labels = labels_y) +
+    ggplot2::scale_y_continuous(breaks = quebras_y,labels = labels_y) +
 
     # 'girando' gráfico
-    coord_flip() -> p
+    ggplot2::coord_flip() -> p
 
   return(p)
 }

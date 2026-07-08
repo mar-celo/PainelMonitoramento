@@ -184,8 +184,10 @@ mod_pfgp_server <- function(id, grafico_compartilhado) {
 
     mod_pfgp_dim1_server("dim1")
 
+    reac_justica_remun <- render_vozes("Percepção de justiça remuneratória")
+
     mod_pfgp_dim2_server("dim2",
-                         reac_justica_remun = render_vozes("Percepção de justiça remuneratória"),
+                         reac_justica_remun   = reac_justica_remun,
                          reac_criterios_promo = render_vozes("Percepções sobre critérios de promoção"))
 
     mod_pfgp_dim3_server("dim3",
@@ -193,15 +195,15 @@ mod_pfgp_server <- function(id, grafico_compartilhado) {
 
     mod_pfgp_dim4_server("dim4",
                          grafico_compartilhado = grafico_compartilhado,
-                         reac_capacitacao = render_vozes("Oportunidade de capacitação"),
+                         reac_capacitacao   = render_vozes("Oportunidade de capacitação"),
                          reac_desemp_equipe = render_vozes("Percepção de desempenho de equipe"),
-                         reac_desemp_org = render_vozes("Percepção de desempenho organizacional"))
+                         reac_desemp_org    = render_vozes("Percepção de desempenho organizacional"))
 
     mod_pfgp_dim5_server("dim5",
-                         reac_justica_remun = render_vozes("Percepção de justiça remuneratória"),
-                         reac_engaja_trab = render_vozes("Percepção de engajamento no trabalho"),
-                         reac_satisf_trab = render_vozes("Satisfação no trabalho"),
-                         reac_inten_saida = render_vozes("Intenção de saída / permanência")
+                         reac_justica_remun = reac_justica_remun,
+                         reac_engaja_trab   = render_vozes("Percepção de engajamento no trabalho"),
+                         reac_satisf_trab   = render_vozes("Satisfação no trabalho"),
+                         reac_inten_saida   = render_vozes("Intenção de saída / permanência")
                          )
 
     mod_pfgp_dim6_server("dim6")
