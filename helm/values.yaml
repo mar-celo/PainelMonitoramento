@@ -1,58 +1,32 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Helm values — PainelMonitoramento
-# Os tokens #{...}# são substituídos pelo Replace Tokens no pipeline antes
-# do helm upgrade, usando as variáveis do variable group e do build.
-# ─────────────────────────────────────────────────────────────────────────────
+project:
+  buildId: ${Build.BuildId}
+  name: ${PROJECT_NAME}
+  namespace: ${KUBE_NAMESPACE}
 
-image:
-  repository: #{DOCKER_REGISTRY_URL}#/#{DOCKER_REGISTRY_PROJECT}#/painelmonitoramento
-  tag: "#{APPLICATION_VERSION}#"
-  pullPolicy: IfNotPresent
-
-imagePullSecrets:
-  - name: "#{IMAGE_PULL_SECRETS_NAME}#"
-
-replicaCount: 1
+deployment:
+  applicationPort: ${APPLICATION_PORT}
+  dockerImageName: ${DOCKER_IMAGE_NAME}
+  dockerImageVersion: ${Build.BuildId}
+  dockerRegistryProject: ${DOCKER_REGISTRY_PROJECT}
+  dockerRegistryUrl: ${DOCKER_REGISTRY_URL}
+  imagePullSecretsName: ${IMAGE_PULL_SECRETS_NAME}
+  limitsCpu: ${LIMITS_CPU}
+  limitsMem: ${LIMITS_MEM}
+  maxUnavailable: ${MAX_UNAVAILABLE}
+  maxSurge: ${MAX_SURGE}
+  minReplicas: ${MIN_REPLICAS}
+  requestsCpu: ${REQUESTS_CPU}
+  requestsMem: ${REQUESTS_MEM}
+  readinessPath: /
+  livenessPath: /
 
 service:
-  type: ClusterIP
-  port: 80
-  targetPort: 3838
+  port: ${APPLICATION_PORT}
 
 ingress:
-  enabled: true
-  # Altere para o DNS real do ambiente
-  host: painel-monitoramento.sistema.gov.br
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  certManagerClusterIssuer: ${CERT_MANAGER_CLUSTER_ISSUER}
+  url: ${INGRESS_URL}
 
-resources:
-  requests:
-    memory: "1Gi"
-    cpu: "500m"
-  limits:
-    memory: "2Gi"
-    cpu: "1500m"
-
-env:
-  - name: PORT
-    value: "3838"
-  - name: HOST
-    value: "0.0.0.0"
-
-readinessProbe:
-  httpGet:
-    path: /
-    port: 3838
-  initialDelaySeconds: 45
-  periodSeconds: 15
-  failureThreshold: 3
-
-livenessProbe:
-  httpGet:
-    path: /
-    port: 3838
-  initialDelaySeconds: 90
-  periodSeconds: 30
-  failureThreshold: 3
+autoScalling:
+  maxReplicas: ${MAX_REPLICAS}
+  scallingByCpuPerc: ${SCALING_BY_CPU_PERC}
