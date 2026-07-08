@@ -1,0 +1,33 @@
+# Controle de versão
+.git
+.gitignore
+
+# Arquivos de desenvolvimento (não vão para o container)
+dev/
+docs/
+.claude/
+rsconnect/
+man/
+
+# Análises de referência (não são módulos)
+R/docs_indigenas/
+R/docs_etnia/
+
+# Scripts de preparação de dados (dados brutos já estão nos .rds)
+data-raw/metodos.r
+data-raw/my_dataset.R
+data-raw/teste_datarow.R
+data-raw/vozes_dataraw.R
+
+# R temporário
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*.swo

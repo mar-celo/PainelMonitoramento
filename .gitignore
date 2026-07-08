@@ -1,6 +1,39 @@
+# R temporário
 .Rproj.user
 .Rhistory
 .RData
 .httr-oauth
-.DS_Store
+
+# Quarto
 .quarto
+/.quarto/
+**/*.quarto_ipynb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Configurações locais shinyapps.io (não vai para produção Docker/Rancher)
+rsconnect/
+
+# Documentação de análise (referência, não é código de produção)
+# man/ é gerado pelo roxygen2 — não precisa versionar
+man/
+
+# Scripts de scaffolding golem (desenvolvimento local)
+dev/
+
+# Documentação e notas de projeto (não são módulos)
+# docs/ contém deploy.r e notas — mantido apenas para referência local
+# Se quiser versionar, remova esta linha:
+# docs/
+
+# Claude Code (configurações locais do assistente)
+.claude/settings.json
+.claude/skill-observations/
+.claude/skills/
+
+# Skills instaladas localmente (não precisam ir para o repo)
+.agents/
+skills-lock.json

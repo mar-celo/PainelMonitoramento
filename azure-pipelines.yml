@@ -1,0 +1,104 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline CI/CD — PainelMonitoramento
+# Organização: ColaboraGov-MGI-SGP
+# Projeto: Plataforma Monitoramento DIGID
+#
+# Pré-requisitos no Azure DevOps:
+#   1. Service Connection Docker Registry chamada "acr-painel"
+#      (Azure Container Registry > nome do seu ACR)
+#   2. Service Connection Kubernetes chamada "rancher-painel"
+#      (Generic/Kubeconfig do cluster Rancher)
+#   3. Variável de pipeline "ACR_ENDPOINT" com o endpoint do ACR
+#      ex: meuacr.azurecr.io
+# ─────────────────────────────────────────────────────────────────────────────
+
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - "docs/**"
+      - "dev/**"
+      - "*.md"
+
+pr: none
+
+variables:
+  IMAGE_NAME: "painelmonitoramento"
+  IMAGE_TAG: "$(Build.BuildId)"
+  FULL_IMAGE: "$(ACR_ENDPOINT)/$(IMAGE_NAME):$(IMAGE_TAG)"
+  K8S_NAMESPACE: "monitoramento"
+
+stages:
+  # ── Etapa 1: Build & Push da imagem Docker ─────────────────────────────────
+  - stage: Build
+    displayName: "Build e Push — Docker"
+    jobs:
+      - job: BuildAndPush
+        displayName: "Construir e enviar imagem para ACR"
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - checkout: self
+            displayName: "Checkout do código"
+
+          - task: Docker@2
+            displayName: "Build e Push para Azure Container Registry"
+            inputs:
+              command: buildAndPush
+              repository: $(IMAGE_NAME)
+              dockerfile: Dockerfile
+              containerRegistry: "acr-painel"   # nome do service connection
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
+          # Publica o manifesto k8s como artefato para o stage de deploy
+          - publish: k8s
+            artifact: k8s-manifests
+            displayName: "Publicar manifestos Kubernetes"
+
+  # ── Etapa 2: Deploy no Rancher (Kubernetes) ────────────────────────────────
+  - stage: Deploy
+    displayName: "Deploy — Rancher"
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployToRancher
+        displayName: "Aplicar deploy no cluster Rancher"
+        pool:
+          vmImage: "ubuntu-latest"
+        environment: "producao"          # cria em Pipelines > Environments
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: k8s-manifests
+                  displayName: "Download dos manifestos"
+
+                # Cria o namespace se não existir
+                - task: Kubernetes@1
+                  displayName: "Criar namespace (se necessário)"
+                  inputs:
+                    connectionType: "Kubernetes Service Connection"
+                    kubernetesServiceEndpoint: "rancher-painel"  # service connection
+                    command: apply
+                    arguments: >
+                      --namespace $(K8S_NAMESPACE)
+                      -f https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/admin/namespace-dev.json
+                  continueOnError: true
+
+                # Aplica o Deployment e Service com a nova imagem
+                - task: KubernetesManifest@0
+                  displayName: "Deploy da aplicação"
+                  inputs:
+                    action: deploy
+                    kubernetesServiceConnection: "rancher-painel"
+                    namespace: $(K8S_NAMESPACE)
+                    manifests: |
+                      $(Pipeline.Workspace)/k8s-manifests/deployment.yaml
+                      $(Pipeline.Workspace)/k8s-manifests/service.yaml
+                    containers: |
+                      $(FULL_IMAGE)

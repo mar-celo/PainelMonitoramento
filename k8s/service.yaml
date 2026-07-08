@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: painel-monitoramento
+  namespace: monitoramento
+  labels:
+    app: painel-monitoramento
+spec:
+  type: ClusterIP
+  selector:
+    app: painel-monitoramento
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3838

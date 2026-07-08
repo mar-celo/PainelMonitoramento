@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Ingress — configure o host conforme o DNS do ambiente Rancher
+# Requer nginx-ingress-controller instalado no cluster
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: painel-monitoramento
+  namespace: monitoramento
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Para HTTPS com cert-manager:
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  # ingressClassName: nginx   # descomente se o cluster usar IngressClass
+  rules:
+    - host: painel-monitoramento.seudominio.gov.br   # ← altere para o DNS real
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: painel-monitoramento
+                port:
+                  number: 80
+  # Para HTTPS, adicione:
+  # tls:
+  #   - hosts:
+  #       - painel-monitoramento.seudominio.gov.br
+  #     secretName: painel-monitoramento-tls

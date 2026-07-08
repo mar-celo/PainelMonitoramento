@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Deployment — PainelMonitoramento
+# A imagem é substituída automaticamente pelo pipeline (KubernetesManifest@0)
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: painel-monitoramento
+  namespace: monitoramento
+  labels:
+    app: painel-monitoramento
+    version: "1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: painel-monitoramento
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: painel-monitoramento
+    spec:
+      containers:
+        - name: app
+          # Imagem substituída pelo pipeline de CI/CD
+          image: REGISTRY_PLACEHOLDER/painelmonitoramento:latest
+          ports:
+            - containerPort: 3838
+              name: http
+          env:
+            - name: PORT
+              value: "3838"
+            - name: HOST
+              value: "0.0.0.0"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1500m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3838
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3838
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            failureThreshold: 3
+      # Descomente e configure se usar Azure Container Registry privado:
+      # imagePullSecrets:
+      #   - name: acr-secret
+      restartPolicy: Always
