@@ -1,8 +1,8 @@
 # Pipeline CI/CD — PainelMonitoramento (R Shiny / Golem)
 #
 # Segue o padrão de variable groups da esteira ColaboraGov-MGI-SGP.
-# Não existe template R/Shiny nativo, então os stages são auto-contidos,
-# mas usam os mesmos variable groups e helm/values.yaml da organização.
+# Não usa extensões do marketplace — substituição de variáveis feita via
+# envsubst (nativo nos agentes Ubuntu) + HelmDeploy@0 nativo.
 #
 # Variable groups necessários (Pipelines > Library):
 #   painelmonitoramento-common  — variáveis comuns a todos os ambientes
@@ -72,12 +72,30 @@ stages:
         deploy:
           steps:
           - checkout: self
-          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
-            displayName: "Substituir tokens em helm/values.yaml"
-            inputs:
-              targetFiles: helm/values.yaml
-              tokenPrefix: '${'
-              tokenSuffix: '}'
+          - bash: |
+              envsubst < helm/values.yaml > helm/values_resolved.yaml
+              mv helm/values_resolved.yaml helm/values.yaml
+            displayName: "Substituir variáveis no helm/values.yaml"
+            env:
+              BUILD_ID: $(Build.BuildId)
+              PROJECT_NAME: $(PROJECT_NAME)
+              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
+              APPLICATION_PORT: $(APPLICATION_PORT)
+              DOCKER_IMAGE_NAME: $(DOCKER_IMAGE_NAME)
+              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
+              LIMITS_CPU: $(LIMITS_CPU)
+              LIMITS_MEM: $(LIMITS_MEM)
+              MAX_UNAVAILABLE: $(MAX_UNAVAILABLE)
+              MAX_SURGE: $(MAX_SURGE)
+              MIN_REPLICAS: $(MIN_REPLICAS)
+              REQUESTS_CPU: $(REQUESTS_CPU)
+              REQUESTS_MEM: $(REQUESTS_MEM)
+              CERT_MANAGER_CLUSTER_ISSUER: $(CERT_MANAGER_CLUSTER_ISSUER)
+              INGRESS_URL: $(INGRESS_URL)
+              MAX_REPLICAS: $(MAX_REPLICAS)
+              SCALING_BY_CPU_PERC: $(SCALING_BY_CPU_PERC)
           - bash: |
               helm registry login $(DOCKER_REGISTRY_URL) \
                 --username $(RANCHER_IMAGE_PULL_USERNAME) \
@@ -116,12 +134,30 @@ stages:
         deploy:
           steps:
           - checkout: self
-          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
-            displayName: "Substituir tokens em helm/values.yaml"
-            inputs:
-              targetFiles: helm/values.yaml
-              tokenPrefix: '${'
-              tokenSuffix: '}'
+          - bash: |
+              envsubst < helm/values.yaml > helm/values_resolved.yaml
+              mv helm/values_resolved.yaml helm/values.yaml
+            displayName: "Substituir variáveis no helm/values.yaml"
+            env:
+              BUILD_ID: $(Build.BuildId)
+              PROJECT_NAME: $(PROJECT_NAME)
+              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
+              APPLICATION_PORT: $(APPLICATION_PORT)
+              DOCKER_IMAGE_NAME: $(DOCKER_IMAGE_NAME)
+              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
+              LIMITS_CPU: $(LIMITS_CPU)
+              LIMITS_MEM: $(LIMITS_MEM)
+              MAX_UNAVAILABLE: $(MAX_UNAVAILABLE)
+              MAX_SURGE: $(MAX_SURGE)
+              MIN_REPLICAS: $(MIN_REPLICAS)
+              REQUESTS_CPU: $(REQUESTS_CPU)
+              REQUESTS_MEM: $(REQUESTS_MEM)
+              CERT_MANAGER_CLUSTER_ISSUER: $(CERT_MANAGER_CLUSTER_ISSUER)
+              INGRESS_URL: $(INGRESS_URL)
+              MAX_REPLICAS: $(MAX_REPLICAS)
+              SCALING_BY_CPU_PERC: $(SCALING_BY_CPU_PERC)
           - bash: |
               helm registry login $(DOCKER_REGISTRY_URL) \
                 --username $(RANCHER_IMAGE_PULL_USERNAME) \
@@ -160,12 +196,30 @@ stages:
         deploy:
           steps:
           - checkout: self
-          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
-            displayName: "Substituir tokens em helm/values.yaml"
-            inputs:
-              targetFiles: helm/values.yaml
-              tokenPrefix: '${'
-              tokenSuffix: '}'
+          - bash: |
+              envsubst < helm/values.yaml > helm/values_resolved.yaml
+              mv helm/values_resolved.yaml helm/values.yaml
+            displayName: "Substituir variáveis no helm/values.yaml"
+            env:
+              BUILD_ID: $(Build.BuildId)
+              PROJECT_NAME: $(PROJECT_NAME)
+              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
+              APPLICATION_PORT: $(APPLICATION_PORT)
+              DOCKER_IMAGE_NAME: $(DOCKER_IMAGE_NAME)
+              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
+              LIMITS_CPU: $(LIMITS_CPU)
+              LIMITS_MEM: $(LIMITS_MEM)
+              MAX_UNAVAILABLE: $(MAX_UNAVAILABLE)
+              MAX_SURGE: $(MAX_SURGE)
+              MIN_REPLICAS: $(MIN_REPLICAS)
+              REQUESTS_CPU: $(REQUESTS_CPU)
+              REQUESTS_MEM: $(REQUESTS_MEM)
+              CERT_MANAGER_CLUSTER_ISSUER: $(CERT_MANAGER_CLUSTER_ISSUER)
+              INGRESS_URL: $(INGRESS_URL)
+              MAX_REPLICAS: $(MAX_REPLICAS)
+              SCALING_BY_CPU_PERC: $(SCALING_BY_CPU_PERC)
           - bash: |
               helm registry login $(DOCKER_REGISTRY_URL) \
                 --username $(RANCHER_IMAGE_PULL_USERNAME) \
