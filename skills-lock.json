@@ -1,11 +1,23 @@
 {
   "version": 1,
   "skills": {
+    "azure-devops": {
+      "source": "sanjay3290/ai-skills",
+      "sourceType": "github",
+      "skillPath": "skills/azure-devops/SKILL.md",
+      "computedHash": "70c27ee2fb7e523a6a7aee9e43607ed746476932581bd6adc0ba96f4cc3d2310"
+    },
     "emil-design-eng": {
       "source": "emilkowalski/skill",
       "sourceType": "github",
       "skillPath": "skills/emil-design-eng/SKILL.md",
       "computedHash": "8bdf9e4e6de7a4969147bf4828a4ad2c5aacd9fba4b690b250a85e0467ca387d"
+    },
+    "kubernetes": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "kubernetes/SKILL.md",
+      "computedHash": "e60b1085b1e2397a1c7aaea75ac02d5c2eb5d7b670fc8955d22a7f204d87c3fc"
     }
   }
 }
