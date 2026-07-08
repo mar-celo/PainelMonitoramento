@@ -1,8 +1,9 @@
 # Pipeline CI/CD — PainelMonitoramento (R Shiny / Golem)
 #
 # Segue o padrão de variable groups da esteira ColaboraGov-MGI-SGP.
-# Não usa extensões do marketplace — substituição de variáveis feita via
-# envsubst (nativo nos agentes Ubuntu) + HelmDeploy@0 nativo.
+# Extensões necessárias (já instaladas na org):
+#   - Replace Tokens (Guillaume ROUCHON / qetza)
+#   - GitTools (GitTools)
 #
 # Variable groups necessários (Pipelines > Library):
 #   painelmonitoramento-common  — variáveis comuns a todos os ambientes
@@ -72,30 +73,12 @@ stages:
         deploy:
           steps:
           - checkout: self
-          - bash: |
-              envsubst < helm/values.yaml > helm/values_resolved.yaml
-              mv helm/values_resolved.yaml helm/values.yaml
-            displayName: "Substituir variáveis no helm/values.yaml"
-            env:
-              BUILD_ID: $(Build.BuildId)
-              PROJECT_NAME: $(PROJECT_NAME)
-              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
-              APPLICATION_PORT: $(APPLICATION_PORT)
-              DOCKER_IMAGE_NAME: $(DOCKER_IMAGE_NAME)
-              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
-              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
-              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
-              LIMITS_CPU: $(LIMITS_CPU)
-              LIMITS_MEM: $(LIMITS_MEM)
-              MAX_UNAVAILABLE: $(MAX_UNAVAILABLE)
-              MAX_SURGE: $(MAX_SURGE)
-              MIN_REPLICAS: $(MIN_REPLICAS)
-              REQUESTS_CPU: $(REQUESTS_CPU)
-              REQUESTS_MEM: $(REQUESTS_MEM)
-              CERT_MANAGER_CLUSTER_ISSUER: $(CERT_MANAGER_CLUSTER_ISSUER)
-              INGRESS_URL: $(INGRESS_URL)
-              MAX_REPLICAS: $(MAX_REPLICAS)
-              SCALING_BY_CPU_PERC: $(SCALING_BY_CPU_PERC)
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
+            displayName: "Substituir tokens em helm/values.yaml"
+            inputs:
+              targetFiles: helm/values.yaml
+              tokenPrefix: '${'
+              tokenSuffix: '}'
           - bash: |
               helm registry login $(DOCKER_REGISTRY_URL) \
                 --username $(RANCHER_IMAGE_PULL_USERNAME) \
@@ -134,30 +117,12 @@ stages:
         deploy:
           steps:
           - checkout: self
-          - bash: |
-              envsubst < helm/values.yaml > helm/values_resolved.yaml
-              mv helm/values_resolved.yaml helm/values.yaml
-            displayName: "Substituir variáveis no helm/values.yaml"
-            env:
-              BUILD_ID: $(Build.BuildId)
-              PROJECT_NAME: $(PROJECT_NAME)
-              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
-              APPLICATION_PORT: $(APPLICATION_PORT)
-              DOCKER_IMAGE_NAME: $(DOCKER_IMAGE_NAME)
-              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
-              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
-              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
-              LIMITS_CPU: $(LIMITS_CPU)
-              LIMITS_MEM: $(LIMITS_MEM)
-              MAX_UNAVAILABLE: $(MAX_UNAVAILABLE)
-              MAX_SURGE: $(MAX_SURGE)
-              MIN_REPLICAS: $(MIN_REPLICAS)
-              REQUESTS_CPU: $(REQUESTS_CPU)
-              REQUESTS_MEM: $(REQUESTS_MEM)
-              CERT_MANAGER_CLUSTER_ISSUER: $(CERT_MANAGER_CLUSTER_ISSUER)
-              INGRESS_URL: $(INGRESS_URL)
-              MAX_REPLICAS: $(MAX_REPLICAS)
-              SCALING_BY_CPU_PERC: $(SCALING_BY_CPU_PERC)
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
+            displayName: "Substituir tokens em helm/values.yaml"
+            inputs:
+              targetFiles: helm/values.yaml
+              tokenPrefix: '${'
+              tokenSuffix: '}'
           - bash: |
               helm registry login $(DOCKER_REGISTRY_URL) \
                 --username $(RANCHER_IMAGE_PULL_USERNAME) \
@@ -196,30 +161,12 @@ stages:
         deploy:
           steps:
           - checkout: self
-          - bash: |
-              envsubst < helm/values.yaml > helm/values_resolved.yaml
-              mv helm/values_resolved.yaml helm/values.yaml
-            displayName: "Substituir variáveis no helm/values.yaml"
-            env:
-              BUILD_ID: $(Build.BuildId)
-              PROJECT_NAME: $(PROJECT_NAME)
-              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
-              APPLICATION_PORT: $(APPLICATION_PORT)
-              DOCKER_IMAGE_NAME: $(DOCKER_IMAGE_NAME)
-              DOCKER_REGISTRY_PROJECT: $(DOCKER_REGISTRY_PROJECT)
-              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
-              IMAGE_PULL_SECRETS_NAME: $(IMAGE_PULL_SECRETS_NAME)
-              LIMITS_CPU: $(LIMITS_CPU)
-              LIMITS_MEM: $(LIMITS_MEM)
-              MAX_UNAVAILABLE: $(MAX_UNAVAILABLE)
-              MAX_SURGE: $(MAX_SURGE)
-              MIN_REPLICAS: $(MIN_REPLICAS)
-              REQUESTS_CPU: $(REQUESTS_CPU)
-              REQUESTS_MEM: $(REQUESTS_MEM)
-              CERT_MANAGER_CLUSTER_ISSUER: $(CERT_MANAGER_CLUSTER_ISSUER)
-              INGRESS_URL: $(INGRESS_URL)
-              MAX_REPLICAS: $(MAX_REPLICAS)
-              SCALING_BY_CPU_PERC: $(SCALING_BY_CPU_PERC)
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@6
+            displayName: "Substituir tokens em helm/values.yaml"
+            inputs:
+              targetFiles: helm/values.yaml
+              tokenPrefix: '${'
+              tokenSuffix: '}'
           - bash: |
               helm registry login $(DOCKER_REGISTRY_URL) \
                 --username $(RANCHER_IMAGE_PULL_USERNAME) \
@@ -249,7 +196,7 @@ stages:
 # ── painelmonitoramento-common ───────────────────────────────────────────────
 # DOCKER_BUILD_CONTEXT_FOLDER  = $(Build.SourcesDirectory)
 # DOCKER_IMAGE_NAME            = painelmonitoramento
-# DOCKER_REGISTRY_PROJECT      = <nome do projeto no Harbor ex: digid>
+# DOCKER_REGISTRY_PROJECT      = <nome do projeto no Harbor, ex: digid>
 # DOCKER_REGISTRY_URL          = registry.api.gov.br
 # DOCKERFILE_PATH              = $(Build.SourcesDirectory)/Dockerfile
 # IMAGE_PULL_SECRETS_NAME      = harbor-credentials
@@ -259,7 +206,7 @@ stages:
 #
 # ── painelmonitoramento-dev ──────────────────────────────────────────────────
 # APPLICATION_PORT             = 3838
-# CERT_MANAGER_CLUSTER_ISSUER = lets-dth
+# CERT_MANAGER_CLUSTER_ISSUER  = lets-dth
 # CLUSTER_SERVICE_CONNECTION   = <nome do service connection K8s de dev>
 # INGRESS_URL                  = painelmonitoramento-dev.dth.api.gov.br
 # KUBE_NAMESPACE               = painelmonitoramento-dev

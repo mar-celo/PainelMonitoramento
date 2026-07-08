@@ -1,12 +1,12 @@
 project:
-  buildId: ${BUILD_ID}
+  buildId: ${Build.BuildId}
   name: ${PROJECT_NAME}
   namespace: ${KUBE_NAMESPACE}
 
 deployment:
   applicationPort: ${APPLICATION_PORT}
   dockerImageName: ${DOCKER_IMAGE_NAME}
-  dockerImageVersion: ${BUILD_ID}
+  dockerImageVersion: ${Build.BuildId}
   dockerRegistryProject: ${DOCKER_REGISTRY_PROJECT}
   dockerRegistryUrl: ${DOCKER_REGISTRY_URL}
   imagePullSecretsName: ${IMAGE_PULL_SECRETS_NAME}
