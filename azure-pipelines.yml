@@ -79,42 +79,26 @@ stages:
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
-              set -e
-              kubectl config set-cluster rancher \
-                --server="$KUBE_SERVER" \
-                --insecure-skip-tls-verify=true \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config set-credentials azure-devops \
-                --token="$KUBE_TOKEN" \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config set-context deploy \
-                --cluster=rancher --user=azure-devops \
-                --namespace="$KUBE_NAMESPACE" \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config use-context deploy \
-                --kubeconfig=/tmp/kube.yaml
-              export KUBECONFIG=/tmp/kube.yaml
-              helm registry login "$DOCKER_REGISTRY_URL" \
-                --username "$RANCHER_IMAGE_PULL_USERNAME" \
-                --password "$RANCHER_IMAGE_PULL_TOKEN"
-              helm upgrade "$PROJECT_NAME" \
-                oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart \
-                --version "1.0.1+69" \
-                --namespace "$KUBE_NAMESPACE" \
-                --values helm/values.yaml \
-                --install \
-                --wait \
-                --timeout 10m
-            displayName: "Helm upgrade — Development"
+              helm registry login $(DOCKER_REGISTRY_URL) \
+                --username $(RANCHER_IMAGE_PULL_USERNAME) \
+                --password $(RANCHER_IMAGE_PULL_TOKEN)
+            displayName: "Helm registry login (Harbor OCI)"
             env:
-              KUBE_SERVER: $(KUBE_SERVER)
-              KUBE_TOKEN: $(KUBE_TOKEN)
-              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
-              PROJECT_NAME: $(PROJECT_NAME)
-              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
-              RANCHER_IMAGE_PULL_USERNAME: $(RANCHER_IMAGE_PULL_USERNAME)
-              RANCHER_IMAGE_PULL_TOKEN: $(RANCHER_IMAGE_PULL_TOKEN)
               HELM_EXPERIMENTAL_OCI: "1"
+          - task: HelmDeploy@0
+            displayName: "Helm upgrade — Development"
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: $(CLUSTER_SERVICE_CONNECTION)
+              namespace: $(KUBE_NAMESPACE)
+              command: upgrade
+              chartType: Name
+              chartName: oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart
+              chartVersion: 1.0.1+69
+              releaseName: $(PROJECT_NAME)
+              valueFile: helm/values.yaml
+              install: true
+              arguments: --wait --timeout 10m
 
 # ── Deploy Homologação (branch: release/*) ────────────────────────────────────
 - stage: deploy_hom
@@ -139,42 +123,26 @@ stages:
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
-              set -e
-              kubectl config set-cluster rancher \
-                --server="$KUBE_SERVER" \
-                --insecure-skip-tls-verify=true \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config set-credentials azure-devops \
-                --token="$KUBE_TOKEN" \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config set-context deploy \
-                --cluster=rancher --user=azure-devops \
-                --namespace="$KUBE_NAMESPACE" \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config use-context deploy \
-                --kubeconfig=/tmp/kube.yaml
-              export KUBECONFIG=/tmp/kube.yaml
-              helm registry login "$DOCKER_REGISTRY_URL" \
-                --username "$RANCHER_IMAGE_PULL_USERNAME" \
-                --password "$RANCHER_IMAGE_PULL_TOKEN"
-              helm upgrade "$PROJECT_NAME" \
-                oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart \
-                --version "1.0.1+69" \
-                --namespace "$KUBE_NAMESPACE" \
-                --values helm/values.yaml \
-                --install \
-                --wait \
-                --timeout 10m
-            displayName: "Helm upgrade — Homologation"
+              helm registry login $(DOCKER_REGISTRY_URL) \
+                --username $(RANCHER_IMAGE_PULL_USERNAME) \
+                --password $(RANCHER_IMAGE_PULL_TOKEN)
+            displayName: "Helm registry login (Harbor OCI)"
             env:
-              KUBE_SERVER: $(KUBE_SERVER)
-              KUBE_TOKEN: $(KUBE_TOKEN)
-              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
-              PROJECT_NAME: $(PROJECT_NAME)
-              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
-              RANCHER_IMAGE_PULL_USERNAME: $(RANCHER_IMAGE_PULL_USERNAME)
-              RANCHER_IMAGE_PULL_TOKEN: $(RANCHER_IMAGE_PULL_TOKEN)
               HELM_EXPERIMENTAL_OCI: "1"
+          - task: HelmDeploy@0
+            displayName: "Helm upgrade — Homologation"
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: $(CLUSTER_SERVICE_CONNECTION)
+              namespace: $(KUBE_NAMESPACE)
+              command: upgrade
+              chartType: Name
+              chartName: oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart
+              chartVersion: 1.0.1+69
+              releaseName: $(PROJECT_NAME)
+              valueFile: helm/values.yaml
+              install: true
+              arguments: --wait --timeout 10m
 
 # ── Deploy Produção (branch: master) ─────────────────────────────────────────
 - stage: deploy_prd
@@ -199,42 +167,26 @@ stages:
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
-              set -e
-              kubectl config set-cluster rancher \
-                --server="$KUBE_SERVER" \
-                --insecure-skip-tls-verify=true \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config set-credentials azure-devops \
-                --token="$KUBE_TOKEN" \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config set-context deploy \
-                --cluster=rancher --user=azure-devops \
-                --namespace="$KUBE_NAMESPACE" \
-                --kubeconfig=/tmp/kube.yaml
-              kubectl config use-context deploy \
-                --kubeconfig=/tmp/kube.yaml
-              export KUBECONFIG=/tmp/kube.yaml
-              helm registry login "$DOCKER_REGISTRY_URL" \
-                --username "$RANCHER_IMAGE_PULL_USERNAME" \
-                --password "$RANCHER_IMAGE_PULL_TOKEN"
-              helm upgrade "$PROJECT_NAME" \
-                oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart \
-                --version "1.0.1+69" \
-                --namespace "$KUBE_NAMESPACE" \
-                --values helm/values.yaml \
-                --install \
-                --wait \
-                --timeout 10m
-            displayName: "Helm upgrade — Production"
+              helm registry login $(DOCKER_REGISTRY_URL) \
+                --username $(RANCHER_IMAGE_PULL_USERNAME) \
+                --password $(RANCHER_IMAGE_PULL_TOKEN)
+            displayName: "Helm registry login (Harbor OCI)"
             env:
-              KUBE_SERVER: $(KUBE_SERVER)
-              KUBE_TOKEN: $(KUBE_TOKEN)
-              KUBE_NAMESPACE: $(KUBE_NAMESPACE)
-              PROJECT_NAME: $(PROJECT_NAME)
-              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
-              RANCHER_IMAGE_PULL_USERNAME: $(RANCHER_IMAGE_PULL_USERNAME)
-              RANCHER_IMAGE_PULL_TOKEN: $(RANCHER_IMAGE_PULL_TOKEN)
               HELM_EXPERIMENTAL_OCI: "1"
+          - task: HelmDeploy@0
+            displayName: "Helm upgrade — Production"
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: $(CLUSTER_SERVICE_CONNECTION)
+              namespace: $(KUBE_NAMESPACE)
+              command: upgrade
+              chartType: Name
+              chartName: oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart
+              chartVersion: 1.0.1+69
+              releaseName: $(PROJECT_NAME)
+              valueFile: helm/values.yaml
+              install: true
+              arguments: --wait --timeout 10m
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GUIA DE VARIABLE GROUPS
@@ -247,7 +199,6 @@ stages:
 # DOCKER_REGISTRY_URL          = registry.api.gov.br
 # DOCKERFILE_PATH              = $(Build.SourcesDirectory)/Dockerfile
 # IMAGE_PULL_SECRETS_NAME      = harbor-credentials
-# KUBE_SERVER                  = https://console.api.gov.br/k8s/clusters/c-m-vp47bjms
 # PROJECT_NAME                 = painelmonitoramento
 # RANCHER_IMAGE_PULL_USERNAME  = <usuário Harbor com pull> [marcar como segredo]
 # RANCHER_IMAGE_PULL_TOKEN     = <token Harbor com pull>  [marcar como segredo]
@@ -255,9 +206,9 @@ stages:
 # ── painelmonitoramento-dev ──────────────────────────────────────────────────
 # APPLICATION_PORT             = 3838
 # CERT_MANAGER_CLUSTER_ISSUER  = lets-dth
+# CLUSTER_SERVICE_CONNECTION   = cluster-dth-console-api
 # INGRESS_URL                  = painelmonitoramento-dev.dth.api.gov.br
 # KUBE_NAMESPACE               = painelmonitoramento-dev
-# KUBE_TOKEN                   = <token do SA azure-devops no namespace dev> [segredo]
 # LIMITS_CPU                   = 1500m
 # LIMITS_MEM                   = 2Gi
 # MAX_REPLICAS                 = 2
@@ -268,6 +219,6 @@ stages:
 # REQUESTS_MEM                 = 1Gi
 # SCALING_BY_CPU_PERC          = 70
 #
-# ── painelmonitoramento-hom  (mesmas chaves; KUBE_TOKEN = SA do namespace hom) ─
-# ── painelmonitoramento-prod (mesmas chaves; KUBE_TOKEN = SA do namespace prod) ─
+# ── painelmonitoramento-hom  (mesmas chaves, valores de homolog) ─────────────
+# ── painelmonitoramento-prod (mesmas chaves, valores de produção) ────────────
 # ─────────────────────────────────────────────────────────────────────────────
