@@ -75,7 +75,8 @@ stages:
           - task: qetza.replacetokens.replacetokens-task.replacetokens@6
             displayName: "Substituir tokens em helm/values.yaml"
             inputs:
-              targetFiles: helm/values.yaml
+              sources: helm/values.yaml
+              tokenPattern: custom
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
@@ -122,7 +123,8 @@ stages:
           - task: qetza.replacetokens.replacetokens-task.replacetokens@6
             displayName: "Substituir tokens em helm/values.yaml"
             inputs:
-              targetFiles: helm/values.yaml
+              sources: helm/values.yaml
+              tokenPattern: custom
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
@@ -169,7 +171,8 @@ stages:
           - task: qetza.replacetokens.replacetokens-task.replacetokens@6
             displayName: "Substituir tokens em helm/values.yaml"
             inputs:
-              targetFiles: helm/values.yaml
+              sources: helm/values.yaml
+              tokenPattern: custom
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
