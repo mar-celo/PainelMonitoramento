@@ -79,12 +79,15 @@ stages:
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
-              helm registry login $(DOCKER_REGISTRY_URL) \
-                --username $(RANCHER_IMAGE_PULL_USERNAME) \
-                --password $(RANCHER_IMAGE_PULL_TOKEN)
+              echo "$RANCHER_IMAGE_PULL_TOKEN" | helm registry login "$DOCKER_REGISTRY_URL" \
+                --username "$RANCHER_IMAGE_PULL_USERNAME" \
+                --password-stdin
             displayName: "Helm registry login (Harbor OCI)"
             env:
               HELM_EXPERIMENTAL_OCI: "1"
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              RANCHER_IMAGE_PULL_USERNAME: $(RANCHER_IMAGE_PULL_USERNAME)
+              RANCHER_IMAGE_PULL_TOKEN: $(RANCHER_IMAGE_PULL_TOKEN)
           - task: HelmDeploy@0
             displayName: "Helm upgrade — Development"
             inputs:
@@ -123,12 +126,15 @@ stages:
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
-              helm registry login $(DOCKER_REGISTRY_URL) \
-                --username $(RANCHER_IMAGE_PULL_USERNAME) \
-                --password $(RANCHER_IMAGE_PULL_TOKEN)
+              echo "$RANCHER_IMAGE_PULL_TOKEN" | helm registry login "$DOCKER_REGISTRY_URL" \
+                --username "$RANCHER_IMAGE_PULL_USERNAME" \
+                --password-stdin
             displayName: "Helm registry login (Harbor OCI)"
             env:
               HELM_EXPERIMENTAL_OCI: "1"
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              RANCHER_IMAGE_PULL_USERNAME: $(RANCHER_IMAGE_PULL_USERNAME)
+              RANCHER_IMAGE_PULL_TOKEN: $(RANCHER_IMAGE_PULL_TOKEN)
           - task: HelmDeploy@0
             displayName: "Helm upgrade — Homologation"
             inputs:
@@ -167,12 +173,15 @@ stages:
               tokenPrefix: '${'
               tokenSuffix: '}'
           - bash: |
-              helm registry login $(DOCKER_REGISTRY_URL) \
-                --username $(RANCHER_IMAGE_PULL_USERNAME) \
-                --password $(RANCHER_IMAGE_PULL_TOKEN)
+              echo "$RANCHER_IMAGE_PULL_TOKEN" | helm registry login "$DOCKER_REGISTRY_URL" \
+                --username "$RANCHER_IMAGE_PULL_USERNAME" \
+                --password-stdin
             displayName: "Helm registry login (Harbor OCI)"
             env:
               HELM_EXPERIMENTAL_OCI: "1"
+              DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+              RANCHER_IMAGE_PULL_USERNAME: $(RANCHER_IMAGE_PULL_USERNAME)
+              RANCHER_IMAGE_PULL_TOKEN: $(RANCHER_IMAGE_PULL_TOKEN)
           - task: HelmDeploy@0
             displayName: "Helm upgrade — Production"
             inputs:
