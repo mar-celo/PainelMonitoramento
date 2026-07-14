@@ -19,6 +19,11 @@ deployment:
   requestsMem: ${REQUESTS_MEM}
   readinessPath: /
   livenessPath: /
+  readinessInitialDelaySeconds: 120
+  livenessInitialDelaySeconds: 180
+  readinessPeriodSeconds: 15
+  readinessTimeoutSeconds: 30
+  readinessFailureThreshold: 10
 
 service:
   port: ${APPLICATION_PORT}
