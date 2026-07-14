@@ -102,6 +102,7 @@ stages:
               releaseName: $(PROJECT_NAME)
               valueFile: helm/values.yaml
               install: true
+              waitForExecution: false
               arguments: ""
 
 # ── Deploy Homologação (branch: release/*) ────────────────────────────────────
@@ -150,6 +151,7 @@ stages:
               releaseName: $(PROJECT_NAME)
               valueFile: helm/values.yaml
               install: true
+              waitForExecution: false
               arguments: ""
 
 # ── Deploy Produção (branch: master) ─────────────────────────────────────────
@@ -198,6 +200,7 @@ stages:
               releaseName: $(PROJECT_NAME)
               valueFile: helm/values.yaml
               install: true
+              waitForExecution: false
               arguments: ""
 
 # ─────────────────────────────────────────────────────────────────────────────
