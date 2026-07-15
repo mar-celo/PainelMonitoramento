@@ -47,7 +47,7 @@ mod_pfgp_dim6_ui <- function(id) {
       bslib::value_box(
         title    = "Servidores em Abono de Permanência",
         value    = "69.518",
-        showcase = shiny::icon("person-check"),
+        showcase = shiny::icon("user-check"),
         theme    = "primary"
       ),
       bslib::value_box(
@@ -98,7 +98,7 @@ mod_pfgp_dim6_ui <- function(id) {
       ),
       .card_futuro_dim6(
         titulo      = "Assentamentos digitalizados (RPPS)",
-        icone       = "file-digital",
+        icone       = "file-alt",
         status      = "A agendar com unidade responsável",
         dificuldade = 5,
         descricao   = paste0(
