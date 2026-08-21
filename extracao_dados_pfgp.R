@@ -125,7 +125,7 @@ meses_analise <- grep("(12$)",meses_tabeloes,value = T) %>% c(.,ultimo_mes)
 
 ## Rodando consulta para cada mês
 ti <- Sys.time()
-transverais_ag_list <-
+ativos_equidade_list <-
   sapply(meses_analise,
          function(m){
            cat("Conectando tabelão de ",m,"\n")
@@ -137,29 +137,51 @@ transverais_ag_list <-
 
            colunas_dispoiniveis <- colnames(df_tabelao)
 
+           # se lista é uma string só, separador tá errado, tentando outro
+           if(length(colunas_dispoiniveis) == 1){
+             cat("Conectando tabelão de ",m,"\n")
+             df_tabelao <- spark_read_csv(
+               sc,
+               name = "tabelao2",
+               delimiter = ";", # mudando separador aqui
+               path = paste0(path_tabeloes,"VW001_TABELAO_SERV_",m,".csv")) %>%
+               janitor::clean_names()
+
+             colunas_dispoiniveis <- colnames(df_tabelao)
+
+           }
+
            # return(colunas_dispoiniveis)})
 
            cat("Filtro PEP e agregando\n\n")
-           df_agreg_transv <-
+           ativos_equidade <-
              df_tabelao  %>%
-             filter(!co_natureza_juridica %in% c(10,5,6),
-                    #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
-                    co_orgao != 99072,
-                    !sg_regime_juridico %in% c("RMI","ETE","ETG"),
-                    !regime_jur_e_sit %in%
-                      c(#"EST-18","EST-19",
-                        "EST-41","EST-42","ANS-36","ANS-37"
-                      ),
-                    var_0001_situacao %in% 'ATIVO'#,
-                    # var_0182_forca_trab %in% 1
-             ) %>%
+             filter(var_0001_situacao %in% 'ATIVO',
+                    var_0048_qtd_serv_p %in% 1) %>%
+             # filter(!co_natureza_juridica %in% c(10,5,6),
+             #        #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
+             #        co_orgao != 99072,
+             #        !sg_regime_juridico %in% c("RMI","ETE","ETG"),
+             #        !regime_jur_e_sit %in%
+             #          c(#"EST-18","EST-19",
+             #            "EST-41","EST-42","ANS-36","ANS-37"
+             #          ),
+             #        var_0001_situacao %in% 'ATIVO'#,
+             #        # var_0182_forca_trab %in% 1
+             # ) %>%
+             mutate(idade_servidor = cut(idade_servidor,
+                                       breaks = c(0,18,30,45,60,120),
+                                       include.lowest = T,
+                                       right = F
+                                       )
+                    ) %>%
              group_by(
                across(
                  all_of(
                    c('compet',
-                     agreg_min,
-                     "VAR_0001_SITUACAO",
-                     "VAR_0048_QTD_SERV_P") %>%
+                     agreg_min ,
+                     "var_0001_situacao",
+                     "var_0048_qtd_serv_p") %>%
                      # das colunas listadas, pegando apenas as colunas disponíveis
                      intersect(colunas_dispoiniveis)
                  )
@@ -167,14 +189,79 @@ transverais_ag_list <-
              ) %>%
              summarise(n = n()) %>%
              collect() %>%
-             setDT()
-           return(df_agreg_transv,fill = T)
+             setDT() %>%
+             setnames('idade_servidor',"faixa_etaria")
+           return(ativos_equidade,fill = T)
          },
          simplify = F)
 (tf <- difftime(Sys.time(),ti,units = "secs"))
 
-transverais_ag_tab <- rbindlist(transverais_ag_list,fill = T)
+# juntando todas as competências
+ativos_equidade_tab <- rbindlist(transverais_ag_list,fill = T)
 
+# transformando faixas etárias
+ativos_equidade_tab[,`:=`(
+
+  # faixa etária como fator
+  faixa_etaria.f =
+    ifelse(grepl("18\\]$",faixa_etaria),
+           "Até 18 anos",
+           ifelse(grepl("^\\[60",faixa_etaria),
+                  "60 anos ou mais",
+                  faixa_etaria)
+           ) %>%
+    gsub("\\[|\\)","",.) %>%
+    gsub(","," a ",.) %>%
+    factor(ordered = T),
+
+  # sexo como 'Homens' ou 'Mulheres
+  sexo = ifelse(co_sexo == "F","Mulheres","Homens")
+  )]
+
+# lendo base do censo e compatibilizando
+base_censo <- readRDS('data-raw/data_pfgp/base_censo.rds') %>%
+  setDT %>%
+  # tirando '25 ou mais' e '65 ou mais' e variáveis
+  filter(!faixa_etaria %in% c('25 anos ou mais','65 anos ou mais','25 a 64 anos')) %>%
+
+  # limites da maior e da menor idade
+  # .[,c("lim_inferior","lim_superior") :=(str_split_fixed(faixa_etaria," a ",n = 2) %>% as.data.table)]
+  .[,ls := (str_split_fixed(faixa_etaria," a ",n = 2)[,2] %>%
+              gsub("[[:alpha:]]","",.) %>%
+              gsub("[[:space:]]","",.) %>%
+              as.numeric())]
+# se vazio, 80 ou mais
+base_censo[,ls := ifelse(is.na(ls),80,ls)]
+
+# recriando mesma faixa etária do tabelão
+base_censo[,faixa_etaria.p := cut(ls,
+                                  breaks = c(0,18,30,45,60,120),
+                                  include.lowest = T,
+                                  right = F
+                                  )]
+# somando população na nova faixa etária (só ensino superior)
+base_censo[,pop.n := gsub("-","0",populacao) %>% as.numeric]
+base_censo_fx <- base_censo[nivel_instrucao == "Superior completo",
+                            .(populacao = sum(pop.n )),
+                            .(no_cor_origem_etnica,
+                              sexo,
+                              no_regiao,
+                              faixa_etaria.p)]
+
+# juntando as bases
+ativos_equidade_tab <-
+  left_join(
+    ativos_equidade_tab,
+    base_censo_fx,
+    by = c("no_cor_origem_etnica" = "no_cor_origem_etnica",
+           "sexo" = "sexo",
+           "no_regiao_naturalidade" = "no_regiao",
+           "faixa_etaria" = "faixa_etaria.p")
+  )
+
+
+# salvando base
+saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade.rds')
 
 ###
 # 17 - Equidade de ingressos ----
