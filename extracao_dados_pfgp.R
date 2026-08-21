@@ -89,9 +89,95 @@ save(lista_orgaos,file = "data-raw/data_pfgp.rda")
 # ==============================================================================.
 
 
+###
+# 11 - Equidade de distribuição ----
+##
+
+## agregados mínimos para os indicadores
+agreg_min <- c(# "CO_ORGAO",
+               # "SG_ORGAO",
+               # "NO_ORGAO",
+               # "NO_NATUREZA_JURIDICA",
+               'NO_COR_ORIGEM_ETNICA',
+               'CO_SEXO',
+               'NO_REGIAO_NATURALIDADE',
+               'IDADE_SERVIDOR') %>%
+  tolower()
+
+
+## caminho para os tabelões no databricks
+path_tabeloes <- "/Volumes/mgi-bronze/raw_data_volumes/mgi/DIGID/CGINF/01.Bases_SAS/COEST/tabelao_csv/"
+
+## listando tabelões disponíveis no datalake
+DBI::dbGetQuery(
+  sc,
+  paste0("LIST '",path_tabeloes,"'")
+) -> lista_de_tabeloes
+
+meses_tabeloes <- str_extract_all(lista_de_tabeloes$name,"20[0-9]{0,4}") %>% unlist %>% unique
+
+## captando meses correspondentes ao último mês de cada ano e último do ano corrente
+ano_cor <- year(Sys.Date())
+ultimo_mes <- grep(paste0("^",ano_cor),meses_tabeloes,value = T) %>% max()
+meses_analise <- grep("(12$)",meses_tabeloes,value = T) %>% c(.,ultimo_mes)
+# meses_analise <- c('201912',grep("202",meses_tabeloes,value = T))
+
+
+## Rodando consulta para cada mês
+ti <- Sys.time()
+transverais_ag_list <-
+  sapply(meses_analise,
+         function(m){
+           cat("Conectando tabelão de ",m,"\n")
+           df_tabelao <- spark_read_csv(
+             sc,
+             name = "tabelao2",
+             path = paste0(path_tabeloes,"VW001_TABELAO_SERV_",m,".csv")) %>%
+             janitor::clean_names()
+
+           colunas_dispoiniveis <- colnames(df_tabelao)
+
+           # return(colunas_dispoiniveis)})
+
+           cat("Filtro PEP e agregando\n\n")
+           df_agreg_transv <-
+             df_tabelao  %>%
+             filter(!co_natureza_juridica %in% c(10,5,6),
+                    #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
+                    co_orgao != 99072,
+                    !sg_regime_juridico %in% c("RMI","ETE","ETG"),
+                    !regime_jur_e_sit %in%
+                      c(#"EST-18","EST-19",
+                        "EST-41","EST-42","ANS-36","ANS-37"
+                      ),
+                    var_0001_situacao %in% 'ATIVO'#,
+                    # var_0182_forca_trab %in% 1
+             ) %>%
+             group_by(
+               across(
+                 all_of(
+                   c('compet',
+                     agreg_min,
+                     "VAR_0001_SITUACAO",
+                     "VAR_0048_QTD_SERV_P") %>%
+                     # das colunas listadas, pegando apenas as colunas disponíveis
+                     intersect(colunas_dispoiniveis)
+                 )
+               )
+             ) %>%
+             summarise(n = n()) %>%
+             collect() %>%
+             setDT()
+           return(df_agreg_transv,fill = T)
+         },
+         simplify = F)
+(tf <- difftime(Sys.time(),ti,units = "secs"))
+
+transverais_ag_tab <- rbindlist(transverais_ag_list,fill = T)
+
 
 ###
-# 1.1 - Equidade de ingressos ----
+# 17 - Equidade de ingressos ----
 ##
 
 

@@ -100,7 +100,7 @@ ind_pfgp <-
 ind_pfgp[,.(pergunta = str_split(descricao,";") |>
               unlist() |>
               str_trim()),
-         .(id_indicador,indicador,no_pfgp_2030,fonte)] |>
+         .(id_indicador,indicador_novo,no_pfgp_2030,fonte)] |>
   unique() -> pfgp_vozes_itens
 
 ### Fuzzy join 1: indicadores pfgp X indicadores Vozes 1
