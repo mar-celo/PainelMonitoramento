@@ -191,13 +191,14 @@ ativos_equidade_list <-
              collect() %>%
              setDT() %>%
              setnames('idade_servidor',"faixa_etaria")
-           return(ativos_equidade,fill = T)
+           Sys.sleep(30)
+           return(ativos_equidade)
          },
          simplify = F)
 (tf <- difftime(Sys.time(),ti,units = "secs"))
 
 # juntando todas as competências
-ativos_equidade_tab <- rbindlist(transverais_ag_list,fill = T)
+ativos_equidade_tab <- rbindlist(ativos_equidade_list,fill = T)
 
 # transformando faixas etárias
 ativos_equidade_tab[,`:=`(
