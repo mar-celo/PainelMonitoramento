@@ -260,9 +260,77 @@ ativos_equidade_tab <-
            "faixa_etaria" = "faixa_etaria.p")
   )
 
+# marcando registros de não-informação (não se aplica, nao informado, etc)
+categorias_interesse <-
+  c("no_cor_origem_etnica",
+    "sexo",
+    "faixa_etaria.f",
+    "no_regiao_naturalidade")
+ativos_equidade_tab[,any_vazio :=
+                      eval(
+                        parse(
+                          text =
+                            paste0(
+                              # "grepl(",
+                              "(",
+                              categorias_interesse,
+                              " %in% c(NA,'NEGRA','NAO_SE_APLICA','N�O INFORMADO'))",
+                              collapse = "|"
+                              )
+                          )
+                        )]
+
+## registrando vazios a serem excluídos
+ativos_equidade_tab[,.(tot_siape = sum(n),
+                       sum_vazio_ziape = sum(any_vazio*n),
+                       mean_vazio_siape = 100*sum(any_vazio*n)/sum(n)),
+                    .(compet)] -> vazios_excluidos
+
+ativos_equidade_tab <- filter(ativos_equidade_tab,!any_vazio)
+
+## percentuais dos grupos cruazdos, mês a mes
+ativos_equidade_tab[,`:=`(total_siape = sum(n),
+                          p_siape = 100*n/sum(n),
+                          p_censo = 100*populacao/sum(populacao)),
+                    .(compet)]
+
+## razões de equidade nos grupos cruzados, mês a mes
+ativos_equidade_tab[,equidade_cruzados := p_siape/p_censo]
+
+## razões de equidade marginais, mês a mes
+sapply(categorias_interesse,
+       function(ct){
+         ativos_equidade_tab %>%
+           copy %>%
+           .[,variavel := ct] %>%
+           .[,.(n = sum(n),populacao = sum(populacao)),
+             by = c("compet","variavel",ct)] %>%
+           .[,`:=`(total_siape = sum(n),
+                   p_siape = 100*n/sum(n),
+                   p_censo = 100*populacao/sum(populacao)),
+             .(compet)] %>%
+           .[,equidade_marginais := p_siape/p_censo] %>%
+           setnames(ct,"categoria")
+       },
+       simplify = F) %>%
+  rbindlist(fill = T)  %>%
+  .[,esperado_siape := p_censo*total_siape/100] -> ativos_equidade_marginais
+
+
+## medidas qui-quadrado cruzadas, mês a mês
+ativos_equidade_tab[,esperado_siape := p_censo*total_siape/100]
+ativos_equidade_tab[,.(qui_quadrado = sum(((esperado_siape - n)^2)/esperado_siape)),
+                    .(compet)] -> equidade_chisq_cruzados
+
+## médias das medidas qui-quadrado marginais, mês a mês
+ativos_equidade_marginais[,.(qui_quadrado = sum(((esperado_siape - n)^2)/esperado_siape)),
+                          .(variavel,compet)] -> equidade_chisq_marginais
 
 # salvando base
 saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade.rds')
+saveRDS(vazios_excluidos,'data-raw/data_pfgp/ativos_equidade_vazios.rds')
+
+
 
 ###
 # 17 - Equidade de ingressos ----
