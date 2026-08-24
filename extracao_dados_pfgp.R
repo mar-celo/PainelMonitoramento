@@ -288,8 +288,8 @@ ativos_equidade_tab[,.(tot_siape = sum(n),
 
 ativos_equidade_tab <- filter(ativos_equidade_tab,!any_vazio)
 
-## percentuais dos grupos cruazdos, mês a mes
-ativos_equidade_tab[,`:=`(total_siape = sum(n),
+## percentuais dos grupos cruazdos e total 'NÃO-SIAPE', mês a mes
+ativos_equidade_tab[,`:=`(n_fora_siape = populacao-n,
                           p_siape = 100*n/sum(n),
                           p_censo = 100*populacao/sum(populacao)),
                     .(compet)]
@@ -303,28 +303,149 @@ sapply(categorias_interesse,
          ativos_equidade_tab %>%
            copy %>%
            .[,variavel := ct] %>%
-           .[,.(n = sum(n),populacao = sum(populacao)),
+           .[,.(n = sum(n),
+                n_fora_siape = sum(n_fora_siape),
+                populacao = sum(populacao)),
              by = c("compet","variavel",ct)] %>%
-           .[,`:=`(total_siape = sum(n),
-                   p_siape = 100*n/sum(n),
+           .[,`:=`(p_siape = 100*n/sum(n),
                    p_censo = 100*populacao/sum(populacao)),
              .(compet)] %>%
            .[,equidade_marginais := p_siape/p_censo] %>%
            setnames(ct,"categoria")
        },
        simplify = F) %>%
-  rbindlist(fill = T)  %>%
-  .[,esperado_siape := p_censo*total_siape/100] -> ativos_equidade_marginais
+  rbindlist(fill = T) -> ativos_equidade_marginais
+
+## função chi-quadrado
+calcula_chisq <- function(n_g1,n_g2){
+  M <- as.table(rbind(n_g1,n_g2))
+  chisq.test(M)$statistic
+}
 
 
 ## medidas qui-quadrado cruzadas, mês a mês
-ativos_equidade_tab[,esperado_siape := p_censo*total_siape/100]
-ativos_equidade_tab[,.(qui_quadrado = sum(((esperado_siape - n)^2)/esperado_siape)),
+ativos_equidade_tab[compet > 201912,.(total_geral = sum(populacao),
+                                      qui_quadrado = calcula_chisq(n,n_fora_siape)),
                     .(compet)] -> equidade_chisq_cruzados
 
-## médias das medidas qui-quadrado marginais, mês a mês
-ativos_equidade_marginais[,.(qui_quadrado = sum(((esperado_siape - n)^2)/esperado_siape)),
+## contingência
+equidade_chisq_cruzados[,coef_contin := sqrt(qui_quadrado/(qui_quadrado +total_geral ))/sqrt(1/2)]
+
+
+
+## qui-quadrado marginais, mês a mês
+ativos_equidade_marginais[,.(total_geral = sum(populacao),
+                             qui_quadrado = calcula_chisq(n,n_fora_siape)),
                           .(variavel,compet)] -> equidade_chisq_marginais
+
+## contingência
+equidade_chisq_marginais[,coef_contin := sqrt(qui_quadrado/(qui_quadrado +total_geral ))/sqrt(1/2)]
+
+
+equidade_chisq_marginais %>%
+  ggplot(aes(x = compet,y = qui_quadrado/1e+3,color = variavel)) +
+  geom_line() +
+  geom_point(size = 2) +
+  geom_line(data = equidade_chisq_cruzados,
+            aes(x = compet,y = qui_quadrado/1e+3,col = "geral")
+            )
+
+
+equidade_chisq_marginais %>%
+  ggplot_cat(aes(x = compet,y = coef_contin,color = variavel)) +
+  ylim(c(0,0.23))+
+  geom_line(size = 1.3) +
+  geom_point(size = 2) +
+  geom_text(aes(label = round(coef_contin,2)),
+            vjust = -3) +
+  geom_line(data = equidade_chisq_cruzados,
+            aes(x = compet,y = coef_contin,col = "geral"),
+            size = 1.3
+  ) +
+  geom_point(data = equidade_chisq_cruzados,
+            aes(x = compet,y = coef_contin,col = "geral"),
+            size = 2
+  )  +
+  geom_text(data = equidade_chisq_cruzados,
+            aes(x = compet,
+                y = coef_contin,
+                label = round(coef_contin,2),
+                col = "geral"),
+            vjust = -3) +
+  labs(col = NULL)
+
+
+## razões de EQUIDADE X coeficientes de contingência
+var_graph <- "no_cor_origem_etnica"
+
+grafs_categ <-
+  lapply(ativos_equidade_marginais$variavel %>% unique,
+         function(var_graph){
+
+           dt_var <- ativos_equidade_marginais[variavel == var_graph]
+           dt_var_contin <- equidade_chisq_marginais[variavel == var_graph,]
+           codf <- max(dt_var$equidade_marginais)/max(equidade_chisq_cruzados$coef_contin,na.rm = T)
+
+           dt_var %>%
+             ggplot_cat(
+               aes(x = zoo::as.yearmon(as.character(compet),format = "%Y%m"))
+             ) +
+             geom_hline(aes(yintercept = 1)) +
+             geom_line(
+               aes(
+                 y = equidade_marginais,
+                 col = as.character(categoria)
+               ),
+               size = 1) +
+             geom_point(
+               aes(
+                 y = equidade_marginais,
+                 col = as.character(categoria)
+               ),size = 2) +
+             geom_line(
+               data = dt_var_contin,
+               aes(
+                 x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
+                 y = codf*coef_contin,
+                 linetype = "Coef.Contingência\n da variável"),
+               size = 1.3
+             ) +
+             geom_text(
+               data = dt_var_contin,
+               aes(
+                 x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
+                 y = codf*coef_contin,
+                 label = round(coef_contin,2),
+                 linetype = "Coef.Contingência\n da variável"),
+               vjust = -2
+               # size = 1.3
+             ) +
+             geom_line(
+               data = equidade_chisq_cruzados,
+               aes(
+                 x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
+                 y = codf*coef_contin,
+                 linetype = "Coef.Contingência\n geral"),
+               size = 1.3
+             ) +
+             scale_linetype_manual(
+               values = c("Coef.Contingência\n da variável" = 2,
+                          "Coef.Contingência\n geral" = 3)
+             ) +
+             scale_y_continuous(
+               name = "Índide de equidade",
+               sec.axis = sec_axis(coef_contin ~./codf,name = "Coef. de Contingência")
+             ) +
+             labs(title = var_graph,
+                  y = "Índice equidade",
+                  col = NULL,
+                  x = NULL,
+                  linetype = NULL)
+         }
+         )
+
+library(patchwork)
+plot_layout(grafs_categ[[1]] + grafs_categ[[2]] + grafs_categ[[3]] + grafs_categ[[4]],ncol = 2)
 
 # salvando base
 saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade.rds')
