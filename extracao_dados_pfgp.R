@@ -36,7 +36,7 @@ sc <- spark_connect(
   master     = Sys.getenv("master"),
   method     = Sys.getenv("method"),
   cluster_id = Sys.getenv("cluster_id"),
-  token      = Sys.getenv("token_databricks"),
+  token      = Sys.getenv("token_databricks3"),
   envname    = Sys.getenv("venv_path")
 )
 
@@ -157,7 +157,9 @@ ativos_equidade_list <-
            ativos_equidade <-
              df_tabelao  %>%
              filter(var_0001_situacao %in% 'ATIVO',
-                    var_0048_qtd_serv_p %in% 1) %>%
+                    sg_regime_juridico %in% 'EST',
+                    var_0048_qtd_serv_p %in% 1
+                    ) %>%
              # filter(!co_natureza_juridica %in% c(10,5,6),
              #        #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
              #        co_orgao != 99072,
@@ -185,12 +187,12 @@ ativos_equidade_list <-
                      # das colunas listadas, pegando apenas as colunas disponíveis
                      intersect(colunas_dispoiniveis)
                  )
-               )
-             ) %>%
+               )) %>%
+             # group_by(var_0001_situacao,var_0048_qtd_serv_p) %>%
              summarise(n = n()) %>%
              collect() %>%
-             setDT() %>%
-             setnames('idade_servidor',"faixa_etaria")
+             setDT() #%>%
+             # setnames('idade_servidor',"faixa_etaria")
            Sys.sleep(30)
            return(ativos_equidade)
          },
@@ -205,11 +207,11 @@ ativos_equidade_tab[,`:=`(
 
   # faixa etária como fator
   faixa_etaria.f =
-    ifelse(grepl("18\\]$",faixa_etaria),
+    ifelse(grepl("18\\]$",idade_servidor),
            "Até 18 anos",
-           ifelse(grepl("^\\[60",faixa_etaria),
+           ifelse(grepl("^\\[60",idade_servidor),
                   "60 anos ou mais",
-                  faixa_etaria)
+                  idade_servidor)
            ) %>%
     gsub("\\[|\\)","",.) %>%
     gsub(","," a ",.) %>%
@@ -257,7 +259,7 @@ ativos_equidade_tab <-
     by = c("no_cor_origem_etnica" = "no_cor_origem_etnica",
            "sexo" = "sexo",
            "no_regiao_naturalidade" = "no_regiao",
-           "faixa_etaria" = "faixa_etaria.p")
+           "idade_servidor" = "faixa_etaria.p")
   )
 
 # marcando registros de não-informação (não se aplica, nao informado, etc)
@@ -288,6 +290,7 @@ ativos_equidade_tab[,.(tot_siape = sum(n),
 
 ativos_equidade_tab <- filter(ativos_equidade_tab,!any_vazio)
 
+
 ## percentuais dos grupos cruazdos e total 'NÃO-SIAPE', mês a mes
 ativos_equidade_tab[,`:=`(n_fora_siape = populacao-n,
                           p_siape = 100*n/sum(n),
@@ -296,6 +299,23 @@ ativos_equidade_tab[,`:=`(n_fora_siape = populacao-n,
 
 ## razões de equidade nos grupos cruzados, mês a mes
 ativos_equidade_tab[,equidade_cruzados := p_siape/p_censo]
+
+## agregando sexo e raça
+ativos_equidade_tab[,cor_sexo :=
+                      paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica),", ",sexo)
+                      # paste0(sexo," ",str_to_title(no_cor_origem_etnica)) %>%
+                      # ifelse(co_sexo == "M" & no_cor_origem_etnica != "INDIGENA",
+                      #        gsub("a$","os",.),
+                      #        .) %>%
+                      # gsub("a$","as",.)
+                    ]
+
+categorias_interesse <-
+  c(#"no_cor_origem_etnica",
+    # "sexo",
+    "cor_sexo",
+    "faixa_etaria.f",
+    "no_regiao_naturalidade")
 
 ## razões de equidade marginais, mês a mes
 sapply(categorias_interesse,
@@ -398,6 +418,12 @@ grafs_categ <-
            dt_var <- ativos_equidade_marginais[variavel == var_graph]
            dt_var_contin <- equidade_chisq_marginais[variavel == var_graph,]
 
+           # separando sexo, caso tenha
+           if(var_graph == 'cor_sexo'){
+             dt_var[,`:=`(subcateg = gsub(".*\\, ","",categoria),
+                          categoria = gsub("\\,.*","",categoria))]
+           }
+
            dt_var %>%
              ggplot_cat(
                aes(x = zoo::as.yearmon(as.character(compet),format = "%Y%m"))
@@ -462,12 +488,17 @@ grafs_categ <-
                   y = "Índice equidade",
                   col = NULL,
                   x = NULL,
-                  linetype = NULL)
+                  linetype = NULL) -> p
+           if(var_graph == "cor_sexo"){
+             p <- p + facet_wrap(subcateg ~ .,nrow = 1,scale = 'fixed')
+           }
+           p
          }
          )
 
 library(patchwork)
-plot_layout(grafs_categ[[1]] + grafs_categ[[2]] + grafs_categ[[3]] + grafs_categ[[4]],ncol = 2)
+# plot_layout(grafs_categ[[1]] + grafs_categ[[2]] + grafs_categ[[3]] + grafs_categ[[4]],ncol = 2)
+plot_layout(grafs_categ[[1]] / (grafs_categ[[2]] + grafs_categ[[3]]) ,nrow = 2)
 
 # salvando base
 saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade.rds')
