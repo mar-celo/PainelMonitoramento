@@ -1,0 +1,519 @@
+---
+title: "Indicador 11: Equidade de distribuição dos servidores públicos"
+author: "MGI - SGP/DIGID/CGINF"
+date: "`r format(Sys.Date(),'%d de %B de %Y')`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r pkg, include = F,warning = F, message=F}
+library(data.table)
+library(dplyr)
+library(rmarkdown)
+library(ggplot2)
+library(stringr)
+library(patchwork)
+library(htmltools)
+library(crosstalk)
+library(bslib)
+source("../R/utils_pfgp.R")
+
+
+### opções de tamanhos das figuras
+fw <- 12
+fh <- 12
+
+### opções de chunk
+knitr::opts_chunk$set(list(warning = FALSE,
+                           message = FALSE,
+                           error = FALSE,
+                           echo = FALSE,
+                           fig.width = fw,
+                           fig.height = fh#,
+                           # dev = c('png','svg')
+                           )
+                      )
+
+
+### opções de tamanhos de texto dos itens (eixo, legendas, etc)
+txt_size <- 18
+
+### opção de tamanho de texto no label (geom_text)
+txt_geom_size <- 18
+```
+
+```{r data}
+ativos_equidade_tab <- readRDS('../data-raw/data_pfgp/ativos_equidade.rds')
+vazios_excluidos <- readRDS('../data-raw/data_pfgp/ativos_equidade_vazios.rds')
+load(file = '../data-raw/data_pfgp/ativos_equidade_marginais.rda')
+
+
+```
+
+
+# Descrição do indicador
+
+Equidade de distribuição dos servidores públicos, vis a vis distribuição demográfica na população, por:
+
+1. gênero; 
+
+1. raça;
+
+1. origem territorial; 
+
+1. faixa etária
+
+
+# Opção 1: índice de equidade por categoria
+
+* Hipótese analítica: na ausência de desigualdade de ingresso como estatutário na APF, a proporção de servidores ativos em uma determinada categoria deveria ser equivalente à sua proporção na população.
+
+* Definição: Razão entre o percentual de uma categoria dentre os ingressantes na APF e o percentual observado na população.
+
+* Detalhe importante: O percentual da população é obtido com base nos dados do Censo de 2022, considerando a população com 18 anos ou mais e com pelo menos o ensino superior completo. Tal recorte justifica-se pelo fato de que este recorte ocorrem em 80% da APF.
+
+* Fórmula conceitual: 
+
+$$I_{eq} = \frac{\text{% de servidores estatutários ativos em uma categoria}}{\text{% desta categoria na população}}$$
+
+Interpretação:
+
+* $I_{eq} = 1$ → Representação equitativa da categoria
+
+* $I_{eq} < 1$ → Sub-representação da categoria na APF
+
+* $I_{eq} > 1$ → Sobrerrepresentação
+
+
+# Opção 2: Coeficiente de contingência ajustado
+
+A proposta do indicador envolve a comparação de distribuições entre dois grupos: i) servidores estatutários ativos na APF e ii) população com ensino superior. O objetivo é comparar as distribuições das categorias de interesse entre os dois grupos. O coeficiente de contingência ajustado pode ser aplicado para este tipo de situação.
+
+Representado por $C_a$, o coeficiente é determinado da seguinte forma
+
+$$C_a = \sqrt{\frac{\chi^2}{\chi^2 + N}}\sqrt[4]{\frac{k-1}{k}\times\frac{r-1}{r}}$$
+
+$N$ é o total geral do recorte populacional obervado no último Censo demográfico. Os termos $r$ e $k$ representam o total de categorias de cada variável. Por se tratar de dois grupos, $k=2$. 
+
+O termo $\chi^2$ depende da diferença entre o que se observa em cada "célula" (exemplo, pessoas pretas na APF) e o que se esperaria observar caso as proporções nos dois grupos fossem iguals. Mais precisamente:
+
+$$\chi^2 = \sum_{i = 1}^{k}\sum_{j = 1}^{r}{\frac{(O_{ij} - E_{ij})^2}{E_{ij}}}$$
+
+
+Interpretação:
+
+* $C_a= 0$ → Representação equitativa na(s) categoria(s) da variável
+
+* $C_a> 0$ → Há categorias sub-representadas e outras sobrerrepresentadas. O grau de de distanciamento da situação de equidade é maior quanto mais o índice se aprixima de 1.
+
+* $C_a= 1$ → Sobrerrepresentação máxima para uma ou mais categorias.
+
+
+
+Opções de cálculo
+
+1. Comparando as proporções das categorias cruzadas das variáveis de interesse (exemplo, Mulheres pretas da geração X, naturais do nordeste)
+
+1. Comparando as proporções marginais de cada variável, de forma separada.
+
+
+# Comparação de distribuições e razões de equidade 
+
+
+```{r dist_censo_siape}
+# codf <- max(ativos_equidade_marginais$equidade_marginais)/max(equidade_chisq_cruzados$coef_contin,na.rm = T)
+# range_eq <- range(ativos_equidade_marginais$equidade_marginais)
+anos.v <- unique(ativos_equidade_marginais$compet %/% 100) #%>% seq(.[1])
+
+
+## função para comparação entre categorias
+
+compara_categ <- function(var_graph) {
+  dt_var <- ativos_equidade_marginais[variavel == var_graph]
+  dt_var_contin <- equidade_chisq_marginais[variavel == var_graph,]
+  
+  # separando sexo, caso tenha
+  if(var_graph == 'cor_sexo'){
+    dt_var[,`:=`(subcateg = gsub(".*\\, ","",categoria),
+                 categoria = gsub("\\,.*","",categoria))]
+  }else{
+    dt_var[,subcateg := ""]
+  }
+  
+  # demais ajustes
+  dt_var[,`:=`(ano = compet %/% 100,
+               categoria = as.character(categoria))]
+  
+  
+  dt_var %>%
+    ## categorias maiores primeiro
+    setorder(-p_censo) %>% 
+    .[,categoria.f := factor(categoria,levels = unique(categoria),ordered = T)]  %>% 
+    
+    ## melt para facilitar a posição (censo e siape são colunas)
+    melt(id.vars = c("ano","categoria.f","subcateg"),
+         measure.vars = c("p_siape","p_censo"),
+         variable.name = c("Grupo"),
+         value.name = "p") %>% 
+    .[,Grupo := gsub("p_","",Grupo) %>% toupper] %>% #View
+    
+    ## filtrando em 2023 (linha de base) x ano atual
+    filter(ano %in% c(2023,max(anos.v))) %>% 
+    ggplot_cat(
+      aes(x = Grupo)
+    ) +
+    
+    # colunas empilhadas
+    geom_col(aes( y = p,fill = categoria.f),
+             position =  position_stack(vjust = .25,reverse = T),
+             width = 0.5
+    )  +
+    
+    # texto
+    geom_text(
+      aes(
+        y = p,
+        label = round(p,2) %>% paste0("%")
+      ),
+      position = position_stack(vjust = .5,reverse = T),
+      col = "white"
+    ) + 
+    facet_wrap(subcateg ~ ano,ncol= 2) + 
+    labs(title = var_graph,
+         y = "Índice equidade",
+         col = NULL,
+         x = NULL,
+         fill = NULL,
+         linetype = NULL) +
+    theme(
+      # Adiciona a borda cinza (ou preta) ao redor de cada painel
+      panel.border = element_rect(color = "gray50", fill = NA, linewidth = 0.8),
+      # Ajusta a distância entre as caixas dos painéis
+      panel.spacing = unit(1, "lines")
+    )
+}
+
+
+grafs_categ <- sapply(ativos_equidade_marginais$variavel %>% unique,compara_categ,simplify = F)
+
+
+# plot_layout(grafs_categ[[1]] + grafs_categ[[2]] + grafs_categ[[3]] + grafs_categ[[4]],ncol = 2)
+# plot_layout(grafs_categ[[1]] / (grafs_categ[[2]] + grafs_categ[[3]]) ,nrow = 2)
+
+```
+
+
+
+
+```{r equidade_chisq}
+# var_graph <- "no_cor_origem_etnica"
+codf <- max(ativos_equidade_marginais$equidade_marginais)/max(equidade_chisq_cruzados$coef_contin,na.rm = T)
+range_eq <- range(ativos_equidade_marginais$equidade_marginais)
+range_conting <- range(equidade_chisq_marginais$coef_contin,
+                       equidade_chisq_cruzados$coef_contin)
+
+ativos_equidade_marginais[,ano := compet %/% 100]
+equidade_chisq_marginais[,ano := compet %/% 100]
+equidade_chisq_cruzados[,ano := compet %/% 100]
+
+
+grafs_equidade <-
+  sapply(ativos_equidade_marginais$variavel %>% unique,
+         function(var_graph){
+
+           dt_var <- ativos_equidade_marginais[variavel == var_graph]
+           dt_var_contin <- equidade_chisq_marginais[variavel == var_graph,]
+
+           # separando sexo, caso tenha
+           if(var_graph == 'cor_sexo'){
+             dt_var[,`:=`(subcateg = gsub(".*\\, ","",categoria),
+                          categoria = gsub("\\,.*","",categoria))]
+           }
+
+           dt_var %>%
+             ggplot_cat(
+               aes(x = ano)
+             ) +
+             ylim(c(0,range_eq[2])) +
+             geom_line(
+               aes(
+                 y = equidade_marginais,
+                 col = as.character(categoria)
+               ),
+               size = 1) +
+             geom_point(
+               aes(
+                 y = equidade_marginais,
+                 col = as.character(categoria)
+               ),size = 2) +
+             geom_hline(aes(yintercept = 1),size = 1.2) +
+             # geom_line(
+             #   data = dt_var_contin,
+             #   aes(
+             #     x = ano,
+             #     y = codf*coef_contin,
+             #     linetype = "Coef.Contingência\n da variável"),
+             #   size = 1.3
+             # ) +
+             # geom_text(
+             #   data = dt_var_contin,
+             #   aes(
+             #     x = ano,
+             #     y = codf*coef_contin,
+             #     label = round(coef_contin,2),
+             #     linetype = "Coef.Contingência\n da variável"),
+             #   vjust = -2
+             #   # size = 1.3
+             # ) +
+             # geom_line(
+             #   data = equidade_chisq_cruzados,
+             #   aes(
+             #     x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
+             #     y = codf*coef_contin,
+             #     linetype = "Coef.Contingência\n geral"),
+             #   size = 1.3
+             # ) +
+             scale_linetype_manual(
+               values = c("Coef.Contingência\n da variável" = 2,
+                          "Coef.Contingência\n geral" = 3)
+             ) +
+             scale_y_continuous(
+               name = "Índide de equidade",
+               limits = c(0,range_eq[2]),
+               sec.axis = sec_axis(coef_contin ~./codf,name = "Coef. de Contingência")
+             ) +
+             labs(title = var_graph,
+                  y = "Índice equidade",
+                  col = NULL,
+                  x = NULL,
+                  linetype = NULL) -> p
+           if(var_graph == "cor_sexo"){
+             p <- p + 
+               facet_wrap(subcateg ~ .,nrow = 1,scale = 'fixed')#+
+               # theme(
+               #   # Adiciona a borda cinza (ou preta) ao redor de cada painel
+               #   panel.border = element_rect(color = "gray50", fill = NA, linewidth = 0.8),
+               #   # Ajusta a distância entre as caixas dos painéis
+               #   panel.spacing = unit(1, "lines")
+               #   )
+           }
+           p
+         },
+         simplify = F)
+
+
+
+grafs_contingencia <-
+  sapply(ativos_equidade_marginais$variavel %>% unique,
+         function(var_graph){
+
+           # dt_var <- ativos_equidade_marginais[variavel == var_graph]
+           dt_var_contin <- equidade_chisq_marginais[variavel == var_graph,]
+
+           # # separando sexo, caso tenha
+           # if(var_graph == 'cor_sexo'){
+           #   dt_var[,`:=`(subcateg = gsub(".*\\, ","",categoria),
+           #                categoria = gsub("\\,.*","",categoria))]
+           # }
+
+           dt_var_contin %>%
+             ggplot_cat(
+               aes(y = coef_contin,
+                   x = ano)
+             ) +
+             ylim(c(0,range_conting[2])) +
+             geom_line(
+               aes(
+                 y = coef_contin,
+                 linetype = "Coef.Contingência\n da variável"),
+               size = 1.1
+             ) +
+             geom_point(
+               aes(
+                 linetype = "Coef.Contingência\n da variável"),
+               size = 2
+             ) +
+             # geom_text(
+             #   aes(
+             #     label = round(coef_contin,2),
+             #     linetype = "Coef.Contingência\n da variável"),
+             #   vjust = -10
+             #   # size = 1.3
+             # ) +
+             geom_line(
+               data = equidade_chisq_cruzados,
+               aes(
+                 x = ano,
+                 y = coef_contin,
+                 linetype = "Coef.Contingência\n geral"),
+               size = 1.3
+             ) +
+             scale_linetype_manual(
+               values = c("Coef.Contingência\n da variável" = 1,
+                          "Coef.Contingência\n geral" = 3)
+             ) +
+             # scale_y_continuous(
+             #   name = "Índide de equidade",
+             #   limits = c(0,range_eq[2]),
+             #   sec.axis = sec_axis(coef_contin ~./codf,name = "Coef. de Contingência")
+             # ) +
+             labs(title = var_graph,
+                  y = "Coeficiente de contingência",
+                  col = NULL,
+                  x = NULL,
+                  linetype = NULL) -> p
+           # if(var_graph == "cor_sexo"){
+           #   p <- p + facet_wrap(subcateg ~ .,nrow = 1,scale = 'fixed')
+           # }
+           p
+         },
+         simplify = F
+         )
+
+# library(patchwork)
+# plot_layout(grafs_categ[[1]] + grafs_categ[[2]] + grafs_categ[[3]] + grafs_categ[[4]],ncol = 2)
+# plot_layout(grafs_categ[[1]] / (grafs_categ[[2]] + grafs_categ[[3]]) ,nrow = 2)
+
+```
+
+
+```{r plot_sections,results = 'asis'}
+list_vars_plot <- c('faixa_etaria.f' = "Geração",
+                    'no_regiao_naturalidade' = "Região de origem",
+                    'cor_sexo' = "Sexo x  cor/origem étnica")
+
+# Lista para guardar as abas
+abas <- list()
+
+i <- 0
+for(lst in names(list_vars_plot)){
+  i <- i + 1
+  # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
+  grafs_categ[[lst]] %>% ggplotly_c() -> g1
+  grafs_equidade[[lst]] %>% ggplotly_c() -> g2
+  grafs_contingencia[[lst]] %>% ggplotly_c() -> g3
+  
+  # 2. bscols() do crosstalk cria o layout grid nativo para widgets
+  layout_loop <- bscols(
+    widths = c(12, 6, 6), # 12 = 100% de largura; 6 = 50% de largura
+    g1,
+    g2,
+    g3
+  )
+  
+  # 3. Guardar como uma aba do Bootstrap
+  abas[[i]] <- nav_panel(
+    title = list_vars_plot[lst],
+    layout_loop
+  )
+  
+  # # 3. Imprime o widget completo sem quebrar a renderização do R Markdown
+  # print(htmltools::tagList(
+  #   # htmltools::tags$h3(paste("Iteração", i)),
+  #   layout_loop
+  # ))
+  
+  cat('\n\n')
+}
+
+# 4. Renderizar o painel de abas completo de uma só vez
+do.call(navset_tab, abas)
+```
+
+
+
+# Visões gerais: coeficientes de contingência X índices médios de equidade
+
+```{r equidades_medias}
+equidade_chisq_marginais %>%
+  ggplot_cat(aes(x = ano,y = coef_contin,color = variavel)) +
+  ylim(c(0,1.2*max(equidade_chisq_cruzados$coef_contin)))+
+  geom_line(size = 1.3) +
+  geom_point(size = 2) +
+  geom_text(aes(label = round(coef_contin,2)),
+            vjust = -3,
+            # nudge_y = 50,
+            show.legend = F) +
+  geom_line(data = equidade_chisq_cruzados,
+            aes(x = ano,y = coef_contin,col = "Total"),
+            size = 1.3
+  ) +
+  geom_point(data = equidade_chisq_cruzados,
+            aes(x = ano,y = coef_contin,col = "Total"),
+            size = 2
+  )  +
+  geom_text(data = equidade_chisq_cruzados,
+            aes(x = ano,
+                y = coef_contin,
+                label = round(coef_contin,2),
+                col = "Total"),
+            vjust = -3,
+            # nudge_y = 50,
+            show.legend = F) +
+  labs(col = NULL,
+       title = "Coeficientes de contingncia",
+       subtitle = "Observações nas distribuições cruzadas X marginais",
+       y = "Coeficiente de contingência"
+       ) -> p2
+
+p2_pl <- ggplotly_c(p2) %>% plotly::style(textposition = "top center")
+```
+
+
+```{r coeficientes_contingencia_medios}
+ativos_equidade_tab[,.(equidade_cruzados = mean(equidade_cruzados)),
+                          .(ano = compet %/% 100)] -> equidade_cruzados_tab
+
+
+ativos_equidade_marginais[,.(equidade_marginais = mean(equidade_marginais)),
+                          .(ano = compet %/% 100,
+                            variavel)]  %>% 
+  ggplot_cat(aes(x = ano,y = equidade_marginais,color = variavel)) +
+  # ylim(c(0,1.2*max(equidade_chisq_cruzados$coef_contin)))+
+  geom_line(size = 1.3) +
+  geom_point(size = 2) +
+  geom_hline(aes(yintercept = 1),size = 1.2) +
+  geom_text(aes(label = round(equidade_marginais,1)),
+            vjust = -1,
+            # nudge_y = 50,
+            show.legend = F) +
+  geom_line(data = equidade_cruzados_tab,
+            aes(x = ano,y = equidade_cruzados,col = "Total"),
+            size = 1.3
+  ) +
+  geom_point(data = equidade_cruzados_tab,
+            aes(x = ano,y = equidade_cruzados,col = "Total"),
+            size = 2
+  )  +
+  geom_text(data = equidade_cruzados_tab,
+            aes(x = ano,
+                y = equidade_cruzados,
+                label = round(equidade_cruzados,2),
+                col = "Total"),
+            vjust = -1,
+            # nudge_y = 50,
+            show.legend = F) +
+  labs(title = "Médias das razões de equidade",
+       subtitle = "Observações nas distribuições cruzadas X marginais",
+       col = NULL,
+       y = "Índice de equidade") -> p3
+
+p3_pl <- ggplotly_c(p3) %>% plotly::style(textposition = "top center")
+```
+
+Os gráficos abaixo comparam duas formas de obtenção de um valor 'global', resumindo os níveis de inequidade
+nas categorias e nas variáveis. 
+
+À esquerda, compara-se o coeficiente de contingência global, obtido à partir das categorias cruzadas das variáveis de interesse, com os obtidos à partir das distribuições marginais de cada fator. À direita, de forma similar, são apresentados os valores médios dos índices de equidade i) calculados nas proporções das variáveis cruzadas e ii) calculados à partir das distribuições marginais. 
+
+```{r app_visoes_gerais}
+# 2. Exibe lado a lado (6 + 6 = 12 colunas no grid Bootstrap)
+bscols(
+  widths = c(6, 6),
+  p2_pl,
+  p3_pl
+)
+```
+
