@@ -251,11 +251,25 @@ base_censo_fx <- base_censo[nivel_instrucao == "Superior completo",
                               no_regiao,
                               faixa_etaria.p)]
 
+# somando população na nova faixa etária (todos)
+base_censo_fx_all <- base_censo[,.(populacao_all = sum(pop.n )),
+                                .(no_cor_origem_etnica,
+                                  sexo,
+                                  no_regiao,
+                                  faixa_etaria.p)]
+
 # juntando as bases
 ativos_equidade_tab <-
   left_join(
     ativos_equidade_tab,
     base_censo_fx,
+    by = c("no_cor_origem_etnica" = "no_cor_origem_etnica",
+           "sexo" = "sexo",
+           "no_regiao_naturalidade" = "no_regiao",
+           "idade_servidor" = "faixa_etaria.p")
+  ) %>%
+  left_join(
+    base_censo_fx_all,
     by = c("no_cor_origem_etnica" = "no_cor_origem_etnica",
            "sexo" = "sexo",
            "no_regiao_naturalidade" = "no_regiao",
@@ -293,12 +307,15 @@ ativos_equidade_tab <- filter(ativos_equidade_tab,!any_vazio)
 
 ## percentuais dos grupos cruazdos e total 'NÃO-SIAPE', mês a mes
 ativos_equidade_tab[,`:=`(n_fora_siape = populacao-n,
+                          n_fora_siape_all = populacao_all-n,
                           p_siape = 100*n/sum(n),
-                          p_censo = 100*populacao/sum(populacao)),
+                          p_censo = 100*populacao/sum(populacao),
+                          p_censo_all = 100*populacao_all/sum(populacao_all)),
                     .(compet)]
 
 ## razões de equidade nos grupos cruzados, mês a mes
-ativos_equidade_tab[,equidade_cruzados := p_siape/p_censo]
+ativos_equidade_tab[,`:=`(equidade_cruzados = p_siape/p_censo,
+                          equidade_cruzados_all = p_siape/p_censo_all)]
 
 ## agregando sexo e raça
 ativos_equidade_tab[,cor_sexo :=
@@ -325,12 +342,16 @@ sapply(categorias_interesse,
            .[,variavel := ct] %>%
            .[,.(n = sum(n),
                 n_fora_siape = sum(n_fora_siape),
-                populacao = sum(populacao)),
+                n_fora_siape_all = sum(n_fora_siape_all),
+                populacao = sum(populacao),
+                populacao_all = sum(populacao_all )),
              by = c("compet","variavel",ct)] %>%
            .[,`:=`(p_siape = 100*n/sum(n),
-                   p_censo = 100*populacao/sum(populacao)),
+                   p_censo = 100*populacao/sum(populacao),
+                   p_censo_all = 100*populacao_all/sum(populacao_all)),
              .(compet)] %>%
-           .[,equidade_marginais := p_siape/p_censo] %>%
+           .[,`:=`(equidade_marginais = p_siape/p_censo,
+                   equidade_marginais_all = p_siape/p_censo_all)]%>%
            setnames(ct,"categoria")
        },
        simplify = F) %>%
@@ -346,26 +367,34 @@ calcula_chisq <- function(n_g1,n_g2){
 ## medidas qui-quadrado cruzadas, mês a mês
 ativos_equidade_tab[compet > 201912,.(n_categ = .N,
                                       total_geral = sum(populacao),
-                                      qui_quadrado = calcula_chisq(n,n_fora_siape)),
+                                      total_geral_all = sum(populacao_all),
+                                      qui_quadrado = calcula_chisq(n,n_fora_siape),
+                                      qui_quadrado_all = calcula_chisq(n,n_fora_siape_all)),
                     .(compet)] -> equidade_chisq_cruzados
 
 ## contingência
 equidade_chisq_cruzados[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
+                              C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
                               max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
-equidade_chisq_cruzados[,coef_contin := C/max_x]
+equidade_chisq_cruzados[,`:=`(coef_contin = 100*C/max_x,
+                              coef_contin_all = 100*C_all/max_x)]
 
 
 
 ## qui-quadrado marginais, mês a mês
 ativos_equidade_marginais[,.(n_categ = .N,
                              total_geral = sum(populacao),
-                             qui_quadrado = calcula_chisq(n,n_fora_siape)),
+                             total_geral_all = sum(populacao_all),
+                             qui_quadrado = calcula_chisq(n,n_fora_siape),
+                             qui_quadrado_all = calcula_chisq(n,n_fora_siape_all)),
                           .(variavel,compet)] -> equidade_chisq_marginais
 
 ## contingência
 equidade_chisq_marginais[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
-                              max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
-equidade_chisq_marginais[,coef_contin := C/max_x]
+                               C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
+                               max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
+equidade_chisq_marginais[,`:=`(coef_contin = 100*C/max_x,
+                               coef_contin_all = 100*C_all/max_x)]
 
 
 equidade_chisq_marginais %>%
@@ -376,30 +405,30 @@ equidade_chisq_marginais %>%
             aes(x = compet,y = qui_quadrado/1e+3,col = "geral")
             )
 
-equidade_chisq_marginais %>% setorder(compet,-coef_contin)
+equidade_chisq_marginais %>% setorder(compet,-coef_contin_all)
 equidade_chisq_marginais[,variavel.f := factor(variavel,levels = variavel %>% unique(),ordered = T)]
 
 
 equidade_chisq_marginais %>%
-  ggplot_cat(aes(x = compet,y = coef_contin,color = variavel.f)) +
-  ylim(c(0,1.2*max(equidade_chisq_cruzados$coef_contin)))+
+  ggplot_cat(aes(x = compet,y = coef_contin_all,color = variavel.f)) +
+  ylim(c(0,1.2*max(equidade_chisq_cruzados$coef_contin_all)))+
   geom_line(size = 1.3) +
   geom_point(size = 2) +
-  geom_text(aes(label = round(coef_contin,2)),
+  geom_text(aes(label = round(coef_contin_all,2)),
             vjust = -1,
             show.legend = F) +
   geom_line(data = equidade_chisq_cruzados,
-            aes(x = compet,y = coef_contin,col = "Total"),
+            aes(x = compet,y = coef_contin_all,col = "Total"),
             size = 1.3
   ) +
   geom_point(data = equidade_chisq_cruzados,
-            aes(x = compet,y = coef_contin,col = "Total"),
+            aes(x = compet,y = coef_contin_all,col = "Total"),
             size = 2
   )  +
   geom_text(data = equidade_chisq_cruzados,
             aes(x = compet,
-                y = coef_contin,
-                label = round(coef_contin,2),
+                y = coef_contin_all,
+                label = round(coef_contin_all,2),
                 col = "Total"),
             vjust = -1,
             show.legend = F) +
@@ -407,8 +436,8 @@ equidade_chisq_marginais %>%
 
 
 ## razões de EQUIDADE X coeficientes de contingência
-var_graph <- "no_cor_origem_etnica"
-codf <- max(ativos_equidade_marginais$equidade_marginais)/max(equidade_chisq_cruzados$coef_contin,na.rm = T)
+# var_graph <- "no_cor_origem_etnica"
+codf <- max(ativos_equidade_marginais$equidade_marginais)/max(equidade_chisq_cruzados$coef_contin_all,na.rm = T)
 range_eq <- range(ativos_equidade_marginais$equidade_marginais)
 
 grafs_categ <-
@@ -431,7 +460,7 @@ grafs_categ <-
              ylim(c(0,range_eq[2])) +
              geom_line(
                aes(
-                 y = equidade_marginais,
+                 y = equidade_marginais_all,
                  col = as.character(categoria)
                ),
                size = 1) +
@@ -444,7 +473,7 @@ grafs_categ <-
              #   size = 1) +
              geom_point(
                aes(
-                 y = equidade_marginais,
+                 y = equidade_marginais_all,
                  col = as.character(categoria)
                ),size = 2) +
              geom_hline(aes(yintercept = 1),size = 1.2) +
@@ -453,7 +482,7 @@ grafs_categ <-
                data = dt_var_contin,
                aes(
                  x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
-                 y = codf*coef_contin,
+                 y = codf*coef_contin_all,
                  linetype = "Coef.Contingência\n da variável"),
                size = 1.3
              ) +
@@ -461,8 +490,8 @@ grafs_categ <-
                data = dt_var_contin,
                aes(
                  x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
-                 y = codf*coef_contin,
-                 label = round(coef_contin,2),
+                 y = codf*coef_contin_all,
+                 label = round(coef_contin_all,2),
                  linetype = "Coef.Contingência\n da variável"),
                vjust = -2
                # size = 1.3
@@ -471,7 +500,7 @@ grafs_categ <-
                data = equidade_chisq_cruzados,
                aes(
                  x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
-                 y = codf*coef_contin,
+                 y = codf*coef_contin_all,
                  linetype = "Coef.Contingência\n geral"),
                size = 1.3
              ) +
@@ -482,7 +511,7 @@ grafs_categ <-
              scale_y_continuous(
                name = "Índide de equidade",
                limits = c(0,range_eq[2]),
-               sec.axis = sec_axis(coef_contin ~./codf,name = "Coef. de Contingência")
+               sec.axis = sec_axis(coef_contin_all ~./codf,name = "Coef. de Contingência")
              ) +
              labs(title = var_graph,
                   y = "Índice equidade",
@@ -496,7 +525,7 @@ grafs_categ <-
          }
          )
 
-library(patchwork)
+
 # plot_layout(grafs_categ[[1]] + grafs_categ[[2]] + grafs_categ[[3]] + grafs_categ[[4]],ncol = 2)
 plot_layout(grafs_categ[[1]] / (grafs_categ[[2]] + grafs_categ[[3]]) ,nrow = 2)
 
