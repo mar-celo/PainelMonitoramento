@@ -504,6 +504,11 @@ plot_layout(grafs_categ[[1]] / (grafs_categ[[2]] + grafs_categ[[3]]) ,nrow = 2)
 saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade.rds')
 saveRDS(vazios_excluidos,'data-raw/data_pfgp/ativos_equidade_vazios.rds')
 
+# salvando coeficientes
+save(ativos_equidade_marginais,
+     equidade_chisq_cruzados,
+     equidade_chisq_marginais,
+     file = 'data-raw/data_pfgp/ativos_equidade_marginais.rda')
 
 
 ###
