@@ -258,12 +258,16 @@ grafs_categ_all <- sapply(ativos_equidade_marginais$variavel %>% unique,compara_
 codf <- max(ativos_equidade_marginais$equidade_marginais)/max(equidade_chisq_cruzados$coef_contin,na.rm = T)
 range_eq <- range(c(ativos_equidade_marginais$equidade_marginais))
 range_eq_all <- range(ativos_equidade_marginais$equidade_marginais_all)
+rg_eq <- range(range_eq,range_eq_all)
 
 range_conting <- range(equidade_chisq_marginais$coef_contin,
                        equidade_chisq_cruzados$coef_contin)
 
 range_conting_all <- range(equidade_chisq_marginais$coef_contin_all,
                            equidade_chisq_cruzados$coef_contin_all)
+
+rg_contg <- range(range_conting,range_conting_all)
+
 
 ativos_equidade_marginais[,ano := compet %/% 100]
 equidade_chisq_marginais[,ano := compet %/% 100]
@@ -281,9 +285,9 @@ compara_equidade <- function(var_graph,var_all = "p_censo"){
     dt_var <- select(dt_var,-matches(nms_all %>% gsub("_all$","",.) %>% paste0("$")))
     setnames(dt_var,nms_all,nms_all %>% gsub("_all$","",.))
     
-    rg_eq <- range_eq_all
+    # rg_eq <- range_eq_all
   }else{
-    rg_eq <- range_eq
+    # rg_eq <- range_eq
   }
   
   # separando sexo, caso tenha
@@ -398,9 +402,9 @@ compara_contingencia <- function(var_graph,var_all = "p_censo"){
     setnames(dt_var_contin_cr,nms_all,nms_all %>% gsub("_all$","",.))
     
     
-    rg_contg <- range_conting_all
+    # rg_contg <- range_conting_all
   }else{
-    rg_contg <- range_conting
+    # rg_contg <- range_conting
   }
   # dt_var_contin[,`:=`(categoria.f = factor(categoria,
   #                                   levels = levels_categoria[[var_graph]],
