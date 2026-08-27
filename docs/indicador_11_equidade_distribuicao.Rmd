@@ -21,6 +21,15 @@ library(bslib)
 source("../R/utils_pfgp.R")
 
 
+# Cria uma regra de estilo CSS que força a altura de todos os gráficos dentro do bscols
+estilo_altura <- tags$style("
+  .crosstalk-bscols .js-plotly-plot, 
+  .crosstalk-bscols .plot-container { 
+    height: 700px !important; 
+  }
+")
+
+
 ### opções de tamanhos das figuras
 fw <- 12
 fh <- 12
@@ -41,13 +50,18 @@ knitr::opts_chunk$set(list(warning = FALSE,
 txt_size <- 18
 
 ### opção de tamanho de texto no label (geom_text)
-txt_geom_size <- 18
+txt_geom_size <- 3
 ```
 
 ```{r data}
 ativos_equidade_tab <- readRDS('../data-raw/data_pfgp/ativos_equidade.rds')
 vazios_excluidos <- readRDS('../data-raw/data_pfgp/ativos_equidade_vazios.rds')
 load(file = '../data-raw/data_pfgp/ativos_equidade_marginais.rda')
+
+
+## tirando 'cor-origem etc' da categoria
+ativos_equidade_marginais[,categoria := gsub("Cor.*.tnica ","",categoria) %>% str_trim  ]
+
 
 ## ordenação geral de fatores com base na distribuição no siape, último mês
 ativos_equidade_marginais %>%
@@ -62,6 +76,8 @@ ativos_equidade_marginais %>%
     }
     splt$categoria %>% as.character %>% gsub("\\,.*","",.) %>% unique()
   }) -> levels_categoria
+
+
 
 ```
 
@@ -146,6 +162,8 @@ anos.v <- unique(ativos_equidade_marginais$compet %/% 100) #%>% seq(.[1])
 compara_categ <- function(var_graph,var_all = "p_censo") {
   stopifnot(var_all %in% c("p_censo","p_censo_all"))
   
+  pd_g <- position_dodge(width = 0.75)
+  
   dt_var <- ativos_equidade_marginais[variavel == var_graph]
   dt_var_contin <- equidade_chisq_marginais[variavel == var_graph,]
 
@@ -160,6 +178,10 @@ compara_categ <- function(var_graph,var_all = "p_censo") {
   # demais ajustes
   dt_var[,`:=`(ano = compet %/% 100,
                categoria = as.character(categoria))]
+  
+  
+  # Limite máximo seguro (ignorando NAs)
+  max_y <- max(c(dt_var$p_censo, dt_var$p_siape, dt_var$p_censo_all), na.rm = TRUE)
   
   
   dt_var %>%
@@ -178,24 +200,30 @@ compara_categ <- function(var_graph,var_all = "p_censo") {
     ## filtrando em 2023 (linha de base) x ano atual
     filter(ano %in% c(2023,max(anos.v))) %>% 
     ggplot_cat(
-      aes(y = p,x = Grupo,fill = categoria.f)
-    ) +
+      aes(y = p,fill = Grupo,x = categoria.f)) +
     
     # colunas empilhadas
-    geom_col(position =  position_stack(vjust = .5,reverse = T),
-             width = 0.5
-    )  +
+    geom_col(position = pd_g,width = 0.75)  +
     
     # texto
     geom_text(
       aes(
-        label = round(p,2) %>% paste0("%")
+        y = p + 0.03*max_y,
+        label = round(p,1) %>% paste0("%")
       ),
-      position = position_stack(vjust = .5,reverse = T),
-      col = "white"
+      position = pd_g,
+      # col = "white"
+      vjust = -0.5,
+      size = txt_geom_size
+    )+ 
+    
+    # 3. Dá 15% de margem no topo do eixo Y sem usar ylim
+    scale_y_continuous(
+      limits = c(0, max_y * 1.15),
+      expand = expansion(mult = c(0, 0.3))
     ) + 
     facet_wrap(subcateg ~ ano,ncol= 2) + 
-    labs(title = var_graph,
+    labs(title = NULL,
          y = "Índice equidade",
          col = NULL,
          x = NULL,
@@ -205,7 +233,9 @@ compara_categ <- function(var_graph,var_all = "p_censo") {
       # Adiciona a borda cinza (ou preta) ao redor de cada painel
       panel.border = element_rect(color = "gray50", fill = NA, linewidth = 0.8),
       # Ajusta a distância entre as caixas dos painéis
-      panel.spacing = unit(1, "lines")
+      panel.spacing.y = unit(10.5, "lines"),
+      plot.margin = margin(t = 30, r = 10, b = 10, l = 10), # Margem superior externa
+      strip.text = element_text(margin = margin(b = 8, t = 4)) # Afasta o texto do título da barra
     )
 }
 
@@ -466,14 +496,17 @@ i <- 0
 for(lst in names(list_vars_plot)){
   i <- i + 1
   # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
-  grafs_categ[[lst]] %>% ggplotly_c() -> g1
+  grafs_categ[[lst]] %>% ggplotly_c() %>% 
+    ggplotly_c()%>% 
+    plotly::layout(margin = list(t = 80))  -> g1
   grafs_equidade[[lst]] %>% ggplotly_c() -> g2
   grafs_contingencia[[lst]] %>% ggplotly_c() -> g3
   
   # 2. bscols() do crosstalk cria o layout grid nativo para widgets
-  layout_loop <- bscols(
-    widths = c(12, 6, 6), # 12 = 100% de largura; 6 = 50% de largura
-    g1,
+  layout_loop <- layout_columns(
+    col_widths = c(12,6, 6), # 12 = 100% largura; 6 e 6 = 50% cada
+    # row_heights = c(120.2, 1),  # Linha 1 fica ligeiramente mais alta que a linha 2
+    # g1,
     g2,
     g3
   )
@@ -481,7 +514,15 @@ for(lst in names(list_vars_plot)){
   # 3. Guardar como uma aba do Bootstrap
   abas[[i]] <- nav_panel(
     title = list_vars_plot[lst],
-    layout_loop
+    card(
+      
+      card_body(g1,
+                height = '400px',
+                full_screen = TRUE
+                ),
+        
+      layout_loop
+      )
   )
   
   # # 3. Imprime o widget completo sem quebrar a renderização do R Markdown
@@ -607,14 +648,18 @@ i <- 0
 for(lst in names(list_vars_plot)){
   i <- i + 1
   # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
-  grafs_categ_all[[lst]] %>% ggplotly_c() -> g1
+  grafs_categ_all[[lst]] %>% 
+    ggplotly_c()%>% 
+    plotly::layout(margin = list(t = 80)) -> g1 # <--- Força 80px de respiro no topo do gráfico todo
   grafs_equidade_all[[lst]] %>% ggplotly_c() -> g2
   grafs_contingencia_all[[lst]] %>% ggplotly_c() -> g3
   
+  
   # 2. bscols() do crosstalk cria o layout grid nativo para widgets
-  layout_loop <- bscols(
-    widths = c(12, 6, 6), # 12 = 100% de largura; 6 = 50% de largura
-    g1,
+  layout_loop <- layout_columns(
+    col_widths = c(12,6, 6), # 12 = 100% largura; 6 e 6 = 50% cada
+    # row_heights = c(120.2, 1),  # Linha 1 fica ligeiramente mais alta que a linha 2
+    # g1,
     g2,
     g3
   )
@@ -622,7 +667,15 @@ for(lst in names(list_vars_plot)){
   # 3. Guardar como uma aba do Bootstrap
   abas2[[i]] <- nav_panel(
     title = list_vars_plot[lst],
-    layout_loop
+    card(
+      
+      card_body(g1,
+                height = '500px',
+                full_screen = TRUE
+                ),
+        
+      layout_loop
+      )
   )
   
   # # 3. Imprime o widget completo sem quebrar a renderização do R Markdown
