@@ -102,6 +102,15 @@ app_ui <- function(request) {
   )
 }
 
+
+# app_ui.R
+
+shiny::addResourcePath(
+  prefix = "relatorios",
+  directoryPath = here::here("docs")
+)
+
+
 #' Add external Resources to the Application
 #'
 #' This function is internally used to add external

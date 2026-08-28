@@ -15,6 +15,22 @@ mod_pfgp_dim1_ui <- function(id) {
                          "Categorias para análise de ingressos",
                          choices = c())
     ),
+    bslib::card(
+      bslib::card_header(
+        class = "bg-primary text-white",
+        tags$div(
+          tags$span(shiny::icon("circle-info")),
+          tags$span("Equidade de distribuição de servidores: estatutários ativos X distribuição demográfica na população")
+        )
+      ),
+      bslib::card_body(
+        tags$div(
+          class = "p-3",
+          style = "font-size: 1.1rem;",
+          shiny::uiOutput(ns("texto_razao_equidade_atv"))
+        )
+      )
+    ),
     bslib::layout_columns(
       col_widths = c(3, 9),
       bslib::card(
@@ -22,7 +38,7 @@ mod_pfgp_dim1_ui <- function(id) {
           class = "bg-primary text-white",
           tags$div(
             tags$span(shiny::icon("circle-info")),
-            tags$span("Equidade de distribuição: servidores X distribuição demográfica na população")
+            tags$span("Equidade de ingresso: novos ingressantes X distribuição demográfica na população")
           )
         ),
         bslib::card_body(
@@ -130,6 +146,18 @@ mod_pfgp_dim1_server <- function(id) {
         selected = categorias_unicas[1]
       )
     })
+
+    output$texto_razao_equidade_atv <- shiny::renderUI({
+      # arquivo_html <- readLines(here::here('docs/indicador_11_equidade_distribuicao.html'))
+      # shiny::withMathJax(shiny::HTML(arquivo_html))
+
+      tags$iframe(
+        src = "relatorios/indicador_11_equidade_distribuicao.html",
+        width = "100%",
+        height = "1500px",
+        style = "border:none;"
+      )
+      })
 
     output$texto_razao_equidade_ingr <- shiny::renderUI({
       texto_html <- "
