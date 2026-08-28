@@ -308,9 +308,9 @@ ativos_equidade_tab <- filter(ativos_equidade_tab,!any_vazio)
 ## percentuais dos grupos cruazdos e total 'NÃO-SIAPE', mês a mes
 ativos_equidade_tab[,`:=`(n_fora_siape = populacao-n,
                           n_fora_siape_all = populacao_all-n,
-                          p_siape = 100*n/sum(n),
-                          p_censo = 100*populacao/sum(populacao),
-                          p_censo_all = 100*populacao_all/sum(populacao_all)),
+                          p_siape = n/sum(n),
+                          p_censo = populacao/sum(populacao),
+                          p_censo_all = populacao_all/sum(populacao_all)),
                     .(compet)]
 
 ## razões de equidade nos grupos cruzados, mês a mes
@@ -346,9 +346,9 @@ sapply(categorias_interesse,
                 populacao = sum(populacao),
                 populacao_all = sum(populacao_all )),
              by = c("compet","variavel",ct)] %>%
-           .[,`:=`(p_siape = 100*n/sum(n),
-                   p_censo = 100*populacao/sum(populacao),
-                   p_censo_all = 100*populacao_all/sum(populacao_all)),
+           .[,`:=`(p_siape = n/sum(n),
+                   p_censo = populacao/sum(populacao),
+                   p_censo_all = populacao_all/sum(populacao_all)),
              .(compet)] %>%
            .[,`:=`(equidade_marginais = p_siape/p_censo,
                    equidade_marginais_all = p_siape/p_censo_all)]%>%
@@ -364,20 +364,42 @@ calcula_chisq <- function(n_g1,n_g2){
 }
 
 
+## função chi-quadrado para aderencia
+calcula_chisq_aderencia <- function(p.v,pi.v){
+  stopifnot(sum(p.v) %in% c(1,100) & sum(pi.v)  %in% c(1,100))
+  if(sum(p.v) == 100) p.v <- p.v/100
+  if(sum(pi.v) == 100) pi.v <- pi.v/100
+  chisq.n <- sum(((p.v - pi.v)^2)/pi.v)
+}
+
+
+## obtendo menor proporçao viável
+ativos_equidade_tab[,geral_siape := sum(n),.(compet)]
+ativos_equidade_tab[,`:=`(razao_prop     = ifelse(populacao > geral_siape,(1-p_censo)/p_censo,NA),
+                          razao_prop_all = ifelse(populacao_all > geral_siape,(1-p_censo_all)/p_censo_all,NA))]
+
 ## medidas qui-quadrado cruzadas, mês a mês
 ativos_equidade_tab[compet > 201912,.(n_categ = .N,
                                       total_geral = sum(populacao),
                                       total_geral_all = sum(populacao_all),
-                                      qui_quadrado = calcula_chisq(n,n_fora_siape),
-                                      qui_quadrado_all = calcula_chisq(n,n_fora_siape_all)),
+                                      qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
+                                      qui_quadrado_all = calcula_chisq_aderencia(p_siape,p_censo_all),
+                                      max_qui = max(razao_prop,na.rm = T),
+                                      max_qui_all = max(razao_prop_all,na.rm = T)),
                     .(compet)] -> equidade_chisq_cruzados
 
-## contingência
-equidade_chisq_cruzados[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
-                              C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
-                              max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
-equidade_chisq_cruzados[,`:=`(coef_contin = 100*C/max_x,
-                              coef_contin_all = 100*C_all/max_x)]
+# ## contingência
+# equidade_chisq_cruzados[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
+#                               C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
+#                               max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
+equidade_chisq_cruzados[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
+                              coef_contin_all = 100*sqrt(qui_quadrado_all/max_qui_all))]
+
+
+## obtendo menor proporçao viável
+ativos_equidade_marginais[,geral_siape := sum(n),.(compet,variavel)]
+ativos_equidade_marginais[,`:=`(razao_prop     = ifelse(populacao > geral_siape,(1-p_censo)/p_censo,NA),
+                                razao_prop_all = ifelse(populacao_all > geral_siape,(1-p_censo_all)/p_censo_all,NA))]
 
 
 
@@ -385,16 +407,18 @@ equidade_chisq_cruzados[,`:=`(coef_contin = 100*C/max_x,
 ativos_equidade_marginais[,.(n_categ = .N,
                              total_geral = sum(populacao),
                              total_geral_all = sum(populacao_all),
-                             qui_quadrado = calcula_chisq(n,n_fora_siape),
-                             qui_quadrado_all = calcula_chisq(n,n_fora_siape_all)),
+                             qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
+                             qui_quadrado_all = calcula_chisq_aderencia(p_siape,p_censo_all),
+                             max_qui = max(razao_prop,na.rm = T),
+                             max_qui_all = max(razao_prop_all,na.rm = T)),
                           .(variavel,compet)] -> equidade_chisq_marginais
 
 ## contingência
-equidade_chisq_marginais[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
-                               C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
-                               max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
-equidade_chisq_marginais[,`:=`(coef_contin = 100*C/max_x,
-                               coef_contin_all = 100*C_all/max_x)]
+# equidade_chisq_marginais[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
+#                                C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
+#                                max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
+equidade_chisq_marginais[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
+                               coef_contin_all = 100*sqrt(qui_quadrado_all/max_qui_all))]
 
 
 equidade_chisq_marginais %>%
