@@ -77,7 +77,19 @@ ativos_equidade_marginais %>%
     splt$categoria %>% as.character %>% gsub("\\,.*","",.) %>% unique()
   }) -> levels_categoria
 
+# proporções em vez de percentuais
+ativos_equidade_marginais[,`:=`(p_siape = 100*p_siape,
+                                p_censo = 100*p_censo,
+                                p_censo_all = 100*p_censo_all)]
 
+ativos_equidade_tab[,`:=`(p_siape = 100*p_siape,
+                                p_censo = 100*p_censo,
+                                p_censo_all = 100*p_censo_all)]
+
+
+ativos_equidade_marginais[,ano := compet %/% 100]
+equidade_chisq_marginais[,ano := compet %/% 100]
+equidade_chisq_cruzados[,ano := compet %/% 100]
 
 ```
 
@@ -118,24 +130,22 @@ Interpretação:
 
 # Opção 2: Coeficiente de contingência ajustado
 
-A proposta do indicador envolve a comparação de distribuições entre dois grupos: i) servidores estatutários ativos na APF e ii) população com ensino superior. O objetivo é comparar as distribuições das categorias de interesse entre os dois grupos. O coeficiente de contingência ajustado pode ser aplicado para este tipo de situação.
+A proposta do indicador envolve a comparação entre a proporção obervada no SIAPE para cada categoria $i$, denotada por $p_i$, e a observada no Censo, $\pi_i$, medindo grau de "aderência" da APF ao que se observa na população como um todo. O coeficiente de contingência ajustado pode ser aplicado para este tipo de situação.
 
 Representado por $C_a$, o coeficiente é determinado da seguinte forma
 
-$$C_a = 100\times\sqrt{\frac{\chi^2}{\chi^2 + N}}\sqrt[4]{\frac{k-1}{k}\times\frac{r-1}{r}}$$
+$$C_a = 100\times\sqrt{\frac{\chi^2}{\chi^2_{max}}}$$
 
-$N$ é o total geral do recorte populacional obervado no último Censo demográfico. Os termos $r$ e $k$ representam o total de categorias de cada variável. Por se tratar de dois grupos, $k=2$. 
+O termo $\chi^2$ depende da diferença entre o que se observa em cada "célula" (exemplo, pessoas pretas na APF) e o que se esperaria observar caso a o percentual observado fosse igual ao que se observa nos dados do Censo. Mais precisamente, considerando que $k$ representa o número de categorias:
 
-O termo $\chi^2$ depende da diferença entre o que se observa em cada "célula" (exemplo, pessoas pretas na APF) e o que se esperaria observar caso as proporções nos dois grupos fossem iguals. Mais precisamente:
-
-$$\chi^2 = \sum_{i = 1}^{k}\sum_{j = 1}^{r}{\frac{(O_{ij} - E_{ij})^2}{E_{ij}}}$$
-
+$$\chi^2 = \sum_{i = 1}^{k}{\frac{(p_{i} - \pi_{i})^2}{\pi_{i}}}$$
+Já o termo $\chi^2_{max}$ representa o valor máximo possível da medida $\chi^2$, que ocorre em uma situação hipotética em que 100% dos servidores ativos pertencem à categoria menos representativa na população brasileira como um todo. Para contornar o fato de que, dado o total observado em uma categoria, na população, nao ser o suficiente para preencher 100% dos servidores ativos no SIAPE (o que ocorre, por exemplo, para a populaçao indígena), o máximo hipotético desconsidera tais grupos.
 
 Interpretação:
 
-* $C_a= 0$ → Representação equitativa na(s) categoria(s) da variável
+* $C_a= 0$ → Representação equitativa na categoria da variável em análise
 
-* $C_a> 0$ → Há categorias sub-representadas e outras sobrerrepresentadas. O grau de de distanciamento da situação de equidade é maior quanto mais o índice se aprixima de 1.
+* $C_a> 0$ → Há categorias sub-representadas e outras sobrerrepresentadas. O grau de de distanciamento da situação de equidade é maior quanto mais o índice se aproxima de 1.
 
 * $C_a= 100$ → Sobrerrepresentação máxima para uma ou mais categorias.
 
@@ -269,9 +279,6 @@ range_conting_all <- range(equidade_chisq_marginais$coef_contin_all,
 rg_contg <- range(range_conting,range_conting_all)
 
 
-ativos_equidade_marginais[,ano := compet %/% 100]
-equidade_chisq_marginais[,ano := compet %/% 100]
-equidade_chisq_cruzados[,ano := compet %/% 100]
 
 
 compara_equidade <- function(var_graph,var_all = "p_censo"){
@@ -547,9 +554,13 @@ do.call(navset_tab, abas)
 # Visões gerais: coeficientes de contingência X índices médios de equidade
 
 ```{r equidades_medias}
+max_conting <- max(equidade_chisq_cruzados$coef_contin,
+                   equidade_chisq_cruzados$coef_contin_all,
+                   equidade_chisq_marginais$coef_contin,
+                   equidade_chisq_marginais$coef_contin_all)
 equidade_chisq_marginais %>%
   ggplot_cat(aes(x = ano,y = coef_contin,color = variavel)) +
-  ylim(c(0,1.2*max(equidade_chisq_cruzados$coef_contin)))+
+  ylim(c(0,1.2*max_conting))+
   geom_line(size = 1.3) +
   geom_point(size = 2) +
   geom_text(aes(label = round(coef_contin,2)),
