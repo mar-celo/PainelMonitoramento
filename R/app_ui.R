@@ -103,14 +103,6 @@ app_ui <- function(request) {
 }
 
 
-# app_ui.R
-
-shiny::addResourcePath(
-  prefix = "relatorios",
-  directoryPath = here::here("docs")
-)
-
-
 #' Add external Resources to the Application
 #'
 #' This function is internally used to add external
@@ -123,6 +115,11 @@ golem_add_external_resources <- function() {
     "www",
     "inst/app/www"
   )
+
+  relatorios_path <- system.file("relatorios", package = "PainelMonitoramento")
+  if (nzchar(relatorios_path) && dir.exists(relatorios_path)) {
+    shiny::addResourcePath("relatorios", relatorios_path)
+  }
 
   shiny::tags$head(
     shiny::tags$link(
