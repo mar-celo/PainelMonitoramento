@@ -2,7 +2,9 @@
 title: "Indicador 11: Equidade de distribuição dos servidores públicos"
 author: "MGI - SGP/DIGID/CGINF"
 date: "`r format(Sys.Date(),'%d de %B de %Y')`"
-output: html_document
+output:
+  html_document: 
+    toc: true
 editor_options: 
   chunk_output_type: console
 ---
