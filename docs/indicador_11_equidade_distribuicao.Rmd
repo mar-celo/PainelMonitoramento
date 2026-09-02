@@ -586,7 +586,7 @@ equidade_chisq_marginais %>%
             # nudge_y = 50,
             show.legend = F) +
   labs(col = NULL,
-       title = "Coeficientes de contingncia",
+       title = "Coeficientes de contingência",
        subtitle = "Observações nas distribuições cruzadas X marginais",
        y = "Coeficiente de contingência"
        ) -> p2
