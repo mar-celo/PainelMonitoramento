@@ -573,9 +573,31 @@ library(data.table)
 library(dplyr)
 library(janitor)
 
-src_tabelao <- "Y:/Temp/VW001_TABELAO_SERV_202604.csv"
 
-colunas_tabelao <- fread(file.path(src_tabelao),nrows = 1) %>% names()
+
+src_tabelao <- paste0(path_tabeloes,"VW001_TABELAO_SERV_",ultimo_mes,".csv")
+
+
+df_tabelao <- spark_read_csv(
+  sc,
+  name = "tabelao2",
+  path = src_tabelao) %>%
+  janitor::clean_names()
+
+colunas_dispoiniveis <- colnames(df_tabelao)
+
+# se lista é uma string só, separador tá errado, tentando outro
+if(length(colunas_dispoiniveis) == 1){
+  df_tabelao <- spark_read_csv(
+    sc,
+    name = "tabelao2",
+    delimiter = ";", # mudando separador aqui
+    path = src_tabelao) %>%
+    janitor::clean_names()
+
+  colunas_dispoiniveis <- colnames(df_tabelao)
+
+}
 
 colunas_filtro_pep <- c("CO_NATUREZA_JURIDICA",
                         "CO_ORGAO",
@@ -583,20 +605,68 @@ colunas_filtro_pep <- c("CO_NATUREZA_JURIDICA",
                         "REGIME_JUR_E_SIT",
                         "VAR_0001_SITUACAO")
 
-agreg_min <- c("CO_ORGAO",
-               "SG_ORGAO",
-               "NO_ORGAO",
-               "NO_NATUREZA_JURIDICA",
-               'NO_COR_ORIGEM_ETNICA',
-               'CO_SEXO',
-               'NO_REGIAO_NATURALIDADE')
+agreg_min_ingr <- c("CO_ORGAO",
+                    "SG_ORGAO",
+                    "NO_ORGAO",
+                    "NO_NATUREZA_JURIDICA",
+                    'NO_COR_ORIGEM_ETNICA',
+                    'CO_SEXO',
+                    'NO_REGIAO_NATURALIDADE')
 
-df_tabelao_202604 <- fread(file.path(src_tabelao),
-                           select = c(colunas_filtro_pep,
-                                      agreg_min,
-                                      "DT_OCOR_INGR_SPUB_SERV") %>%
-                             unique) %>%
-  janitor::clean_names() %>%
+
+ingressos_equidade <-
+  df_tabelao  %>%
+  filter(#var_0001_situacao %in% 'ATIVO',
+         sg_regime_juridico %in% 'EST',
+         var_0048_qtd_serv_p %in% 1
+  ) %>%
+  mutate(ano_ingresso = year(dt_ocor_ingr_spub_serv),
+         idade_servidor = cut(idade_servidor,
+                              breaks = c(0,18,30,45,60,120),
+                              include.lowest = T,
+                              right = F
+  )
+  ) %>%
+  # filtrando 2010 em diante
+  filter(ano_ingresso >= 2010) %>%
+  group_by(
+    ano_ingresso,
+    across(
+      all_of(
+        c(agreg_min ,
+          "var_0001_situacao",
+          "var_0048_qtd_serv_p") %>%
+          # das colunas listadas, pegando apenas as colunas disponíveis
+          intersect(colunas_dispoiniveis)
+      )
+    )) %>%
+  # group_by(var_0001_situacao,var_0048_qtd_serv_p) %>%
+  summarise(n = n()) %>%
+  collect() %>%
+  setDT()
+
+
+# transformando faixas etárias
+ingressos_equidade[,`:=`(
+
+  # faixa etária como fator
+  faixa_etaria.f =
+    ifelse(grepl("18\\]$",idade_servidor),
+           "Até 18 anos",
+           ifelse(grepl("^\\[60",idade_servidor),
+                  "60 anos ou mais",
+                  idade_servidor)
+    ) %>%
+    gsub("\\[|\\)","",.) %>%
+    gsub(","," a ",.) %>%
+    factor(ordered = T),
+
+  # sexo como 'Homens' ou 'Mulheres
+  sexo = ifelse(co_sexo == "F","Mulheres","Homens")
+)]
+
+
+df_tabelao_202604 <- df_tabelao %>%
   filter(!co_natureza_juridica %in% c(10,5,6),
          #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
          co_orgao != 99072,
@@ -610,10 +680,13 @@ df_tabelao_202604 <- fread(file.path(src_tabelao),
   )
 
 
+
+
+
 base_ingressos <- df_tabelao_202604 %>%
-  filter(dt_ocor_ingr_spub_serv != "") %>%
+  filter(!is.na(dt_ocor_ingr_spub_serv)) %>%
   mutate(
-    dt_ingresso = format(as.Date(dt_ocor_ingr_spub_serv, "%d/%m/%Y"), "%Y%m"),
+    dt_ingresso = date_format(dt_ocor_ingr_spub_serv, "yyyyMM"),
     # Depois, cria o contador
     contador = 1
   )
@@ -627,7 +700,8 @@ base_ingressos <- base_ingressos %>%
            sg_orgao,no_natureza_juridica, no_cor_origem_etnica, co_sexo,
            no_regiao_naturalidade, dt_ingresso) %>%
   summarise(total = sum(contador, na.rm = TRUE), .groups = 'drop') %>%
-  filter(dt_ingresso >= 201600)
+  filter(dt_ingresso >= 201600) %>%
+  collect()
 
 base_ingressos <-
   base_ingressos %>%
