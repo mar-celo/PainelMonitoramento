@@ -1,5 +1,6 @@
 library(dplyr)
 library(purrr)
+library(data.table) #necessária para rodar o setnames
 
 ler_censo <- function(arquivo) {
 
