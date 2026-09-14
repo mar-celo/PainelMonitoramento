@@ -88,6 +88,30 @@ save(lista_orgaos,file = "data-raw/data_pfgp.rda")
 # Dimensão 1 -------
 # ==============================================================================.
 
+###
+# 0 - Base do Censo (para indicadores 11 e 17) ----
+###
+
+
+dicionario <-
+  list(
+    grande_regiao = c(1 = "NORTE",
+                      2 = "NORDESTE",
+                      3 = "SUDESTE",
+                      4 = "SUL",
+                      5 = "CENTRO_OESTE"),
+    UF = NULL,
+    sexo = c(1 = "Homens", 2 = "Mulheres"),
+    faixa_etaria = NULL,
+    cor_raca = c(1 = "BRANCA",
+                 2 = "PRETA",
+                 3 = "AMARELA",
+                 4 = "PARDA",
+                 5 = "INDIGENA"),
+    local_nascimento = ,
+    UF_nascimento = NULL,
+    nivel_instrucao
+  )
 
 ###
 # 11 - Equidade de distribuição ----
