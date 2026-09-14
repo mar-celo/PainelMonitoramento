@@ -53,15 +53,25 @@ pessoas_censo <-
     .groups = "drop"
   )
 
-names(pessoas_censo) <- c("grande_regiao",
-                  "UF",
-                  "sexo",
-                  "faixa_etaria",
-                  "cor_raca",
-                  "local_nascimento",
-                  "UF_nascimento",
-                  "nivel_instrucao",
-                  "populacao_estimada")
+
+setnames(pessoas_censo,
+         c( "P0010",
+            "P0020",
+            "P0150",
+            "P0180",
+            "P0210",
+            "P0480",
+            "P0490",
+            "P0760"),
+         c("grande_regiao",
+           "UF",
+           "sexo",
+           "faixa_etaria",
+           "cor_raca",
+           "local_nascimento",
+           "UF_nascimento",
+           "nivel_instrucao")
+         )
 
 #library(writexl)
 #write_xlsx(pessoas_censo, "C:/Documentos/PFGP/pessoas_censo.xlsx")
