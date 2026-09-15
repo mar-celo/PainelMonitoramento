@@ -147,7 +147,7 @@ Interpretação:
 
 * $C_a= 0$ → Representação equitativa na categoria da variável em análise
 
-* $C_a> 0$ → Há categorias sub-representadas e outras sobrerrepresentadas. O grau de de distanciamento da situação de equidade é maior quanto mais o índice se aproxima de 1.
+* $C_a> 0$ → Há categorias sub-representadas e outras sobrerrepresentadas. O grau de de distanciamento da situação de equidade é maior quanto mais o índice se aproxima de 100.
 
 * $C_a= 100$ → Sobrerrepresentação máxima para uma ou mais categorias.
 

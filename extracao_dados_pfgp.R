@@ -42,47 +42,47 @@ sc <- spark_connect(
 
 ### 2.2 - conexão com Extração DW-SIAPE ----
 
-# Leitura dos dados apontando para o bd_coest/df_pfgp_all na camada Ouro
-df_dwsiape_pfgp <- sdf_sql(sc,"SELECT * FROM `mgi-ouro`.`bd_coest`.`df_pfgp_all`")
-
-### 2.3 - vetor com agregadores mínimos e outros agregadores
-agreg_min <- c("MES",
-               "ORGAO_VINC",
-               "NOME_ORGAO_VINC",
-               "NOME_ORGAO_VINC_COMPLETO",
-               #"NOME_NATUREZA_JURIDICA_CNNJ",
-               "NOME_SEXO",
-               "UF_NATURALIDADE")
-
-## 2.4 - vetor com demais agregadores para outros indicadores
-agreg_ind <- c("NOME_FUNCAO",
-               "NOME_NIVEL_FUNCAO",
-               "IDADE",
-               "GRUPO_CARGO",
-               "NOME_GRUPO_CARGO",
-               "CARGO",
-               "NOME_CARGO",
-               "GRUPO_CARGO_ORIGEM",
-               "NOME_GRUPO_CARGO_ORIGEM",
-               "CARGO_ORIGEM",
-               "NOME_CARGO_ORIGEM")
-
-
-## 2.5 - lista de regiões de naturalidade
-regioes_list <-
-  list(
-    Norte = data.table(UF_NATURALIDADE = c("AM","AC","AP","PA","RO","RR","TO")),
-    Nordeste = data.table(UF_NATURALIDADE = c("PB","RN","BA","CE","PE","MA","PI","SE","AL")),
-    Sul = data.table(UF_NATURALIDADE = c("PR","SC","RS")),
-    Sudeste = data.table(UF_NATURALIDADE = c("ES","MG","RJ","SP")),
-    "Centro-Oeste" = data.table(UF_NATURALIDADE = c("DF","GO","MS","MT"))
-  ) %>%
-  rbindlist(idcol = "REGIAO_NATURALIDADE")
-
-
-# salvando lista de siglas de órgãos
-lista_orgaos <- transverais_ag_tab[,unique(sg_orgao)]
-save(lista_orgaos,file = "data-raw/data_pfgp.rda")
+# # Leitura dos dados apontando para o bd_coest/df_pfgp_all na camada Ouro
+# df_dwsiape_pfgp <- sdf_sql(sc,"SELECT * FROM `mgi-ouro`.`bd_coest`.`df_pfgp_all`")
+#
+# ### 2.3 - vetor com agregadores mínimos e outros agregadores
+# agreg_min <- c("MES",
+#                "ORGAO_VINC",
+#                "NOME_ORGAO_VINC",
+#                "NOME_ORGAO_VINC_COMPLETO",
+#                #"NOME_NATUREZA_JURIDICA_CNNJ",
+#                "NOME_SEXO",
+#                "UF_NATURALIDADE")
+#
+# ## 2.4 - vetor com demais agregadores para outros indicadores
+# agreg_ind <- c("NOME_FUNCAO",
+#                "NOME_NIVEL_FUNCAO",
+#                "IDADE",
+#                "GRUPO_CARGO",
+#                "NOME_GRUPO_CARGO",
+#                "CARGO",
+#                "NOME_CARGO",
+#                "GRUPO_CARGO_ORIGEM",
+#                "NOME_GRUPO_CARGO_ORIGEM",
+#                "CARGO_ORIGEM",
+#                "NOME_CARGO_ORIGEM")
+#
+#
+# ## 2.5 - lista de regiões de naturalidade
+# regioes_list <-
+#   list(
+#     Norte = data.table(UF_NATURALIDADE = c("AM","AC","AP","PA","RO","RR","TO")),
+#     Nordeste = data.table(UF_NATURALIDADE = c("PB","RN","BA","CE","PE","MA","PI","SE","AL")),
+#     Sul = data.table(UF_NATURALIDADE = c("PR","SC","RS")),
+#     Sudeste = data.table(UF_NATURALIDADE = c("ES","MG","RJ","SP")),
+#     "Centro-Oeste" = data.table(UF_NATURALIDADE = c("DF","GO","MS","MT"))
+#   ) %>%
+#   rbindlist(idcol = "REGIAO_NATURALIDADE")
+#
+#
+# # salvando lista de siglas de órgãos
+# lista_orgaos <- transverais_ag_tab[,unique(sg_orgao)]
+# save(lista_orgaos,file = "data-raw/data_pfgp.rda")
 
 # ==============================================================================.
 # Dimensão 1 -------
@@ -93,40 +93,133 @@ save(lista_orgaos,file = "data-raw/data_pfgp.rda")
 ###
 
 
-dicionario <-
+## registrando labels
+labels <-
   list(
-    grande_regiao = c(1 = "NORTE",
-                      2 = "NORDESTE",
-                      3 = "SUDESTE",
-                      4 = "SUL",
-                      5 = "CENTRO_OESTE"),
-    UF = NULL,
-    sexo = c(1 = "Homens", 2 = "Mulheres"),
-    faixa_etaria = NULL,
-    cor_raca = c(1 = "BRANCA",
-                 2 = "PRETA",
-                 3 = "AMARELA",
-                 4 = "PARDA",
-                 5 = "INDIGENA"),
-    local_nascimento = ,
-    UF_nascimento = NULL,
-    nivel_instrucao
+    regiao = c('1' = "NORTE",
+               '2' = "NORDESTE",
+               '3' = "SUDESTE",
+               '4' = "SUL",
+               '5' = "CENTRO_OESTE"),
+    sexo = c('1' = "Homens", '2' = "Mulheres"),
+    cor_raca = c('1' = "BRANCA",
+                 '2' = "PRETA",
+                 '3' = "AMARELA",
+                 '4' = "PARDA",
+                 '5' = "INDIGENA"),
+    deficiencia = c("1" = "Pessoa COM deficiência","2" = "Pessoa SEM deficiência"),
+    nivel_instrucao =
+      c('1' = 'Sem instrução e menos de 1 ano',
+        '2' = 'Ensino fundamental incompleto ou equivalente',
+        '3' = 'Ensino fundamental completo ou equivalente',
+        '4' = 'Ensino médio incompleto ou equivalente',
+        '5' = 'Ensino médio completo ou equivalente',
+        '6' = 'Superior incompleto ou equivalente',
+        '7' = 'Superior completo',
+        '8' = 'Não determinado',
+        '9' = 'Ignorado',
+        '901' = 'Ignorado',
+        '902' = 'Ignorado',
+        '903' = 'Ignorado',
+        '911' = 'Ignorado',
+        '912' = 'Ignorado',
+        '913' = 'Ignorado',
+        '914' = 'Ignorado')
   )
+
+## carregando agregadão do Censo
+pessoas_censo <- readRDS("data-raw/data_pfgp/agregado_microdado_censo.rds" ) %>% setDT()
+
+
+## cortes de faixa etária
+breaks_faixa_etaria <- c(0,15,20,25,30,45,60,75,120)
+
+## cortes de geração
+breaks_geracao <- c(1946,1964,1980,1996,2012)
+
+## recriando variáveis nos moldes do SIAPE
+pessoas_censo[,`:=`(
+  # região de naturalidade
+  no_regiao_naturalidade = ifelse(local_nascimento == 3,
+                                  "Outro país",
+                                  ifelse(local_nascimento == 2,
+                                         substr(UF_nascimento,1,1) %>% labels$regiao[.],
+                                         labels$regiao[grande_regiao]
+                                         )
+                                  ),
+
+  # sexo
+  sexo = labels$sexo[sexo],
+
+  # cor/origem étnica
+  no_cor_origem_etnica = labels$cor_raca[cor_raca],
+
+  # limites faixa etária
+  fx_li = ifelse(faixa_etaria %in% c(NA,"",99),
+                 NA,
+                 (faixa_etaria - 1)*5),
+
+
+  fx_ls = ifelse(faixa_etaria %in% c(NA,"",99),
+                 NA,
+                 (faixa_etaria)*5 - 1),
+
+  # deficiênciia
+  pcd = labels$deficiencia[deficiencia]
+  )]
+
+## criando anos de nascimento com base nas faixas etárias (referência, jul-agos/2022)
+pessoas_censo[,`:=`(
+  anonasc_li = 2022 - fx_ls,
+  anonasc_ls = 2022 - fx_li
+)]
+
+
+## > recriando algumas variáveis de interesse (fazer o mesmo no SIAPE) ----
+pessoas_censo[,`:=`(
+  ## faixa etária
+  idade_servidor = cut(fx_ls,
+                       breaks = breaks_faixa_etaria,
+                       include.lowest = T,
+                       right = F
+                       ),
+
+  ## cor/origem étnica agregando pretos e pardos em negros
+  no_cor_origem_etnica_ag = ifelse(no_cor_origem_etnica %in% c("PRETA","PARDA"),
+                                    "NEGRA",
+                                    no_cor_origem_etnica)
+
+  )]
+
+## novas variáveis de interesse
+pessoas_censo[,`:=`(
+  cor_sexo    =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica),", ",sexo),
+  cor_sexo_ag =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica_ag),", ",sexo)
+)]
+
+
 
 ###
 # 11 - Equidade de distribuição ----
 ##
+
+
+#### > extração dos tabelões no SIAPE -----
 
 ## agregados mínimos para os indicadores
 agreg_min <- c(# "CO_ORGAO",
                # "SG_ORGAO",
                # "NO_ORGAO",
                # "NO_NATUREZA_JURIDICA",
+               'geracao',
+               'pcd',
                'NO_COR_ORIGEM_ETNICA',
                'CO_SEXO',
                'NO_REGIAO_NATURALIDADE',
                'IDADE_SERVIDOR') %>%
   tolower()
+
+
 
 
 ## caminho para os tabelões no databricks
@@ -195,11 +288,26 @@ ativos_equidade_list <-
              #        var_0001_situacao %in% 'ATIVO'#,
              #        # var_0182_forca_trab %in% 1
              # ) %>%
+             mutate(ano_nasc = as.numeric(year(dt_nasc_serv))) %>%
              mutate(idade_servidor = cut(idade_servidor,
-                                       breaks = c(0,18,30,45,60,120),
-                                       include.lowest = T,
-                                       right = F
-                                       )
+                                         breaks = breaks_faixa_etaria,
+                                         include.lowest = T,
+                                         right = F
+                                         ),
+
+                    geracao = cut(ano_nasc,
+                                  breaks = breaks_geracao,
+                                  right = FALSE,
+                                  include.lowest = T,
+                                  labels = c("Boomers",
+                                             "X",
+                                             "Millenials",
+                                             "Z")),
+
+                    pcd = ifelse(co_grupo_deficiencia_fisica %in% 0,
+                                 "Pessoa SEM deficiência",
+                                 "Pessoa COM deficiência")
+
                     ) %>%
              group_by(
                across(
@@ -207,15 +315,15 @@ ativos_equidade_list <-
                    c('compet',
                      agreg_min ,
                      "var_0001_situacao",
-                     "var_0048_qtd_serv_p") %>%
+                     "var_0048_qtd_serv_p") #%>%
                      # das colunas listadas, pegando apenas as colunas disponíveis
-                     intersect(colunas_dispoiniveis)
+                     # intersect(colunas_dispoiniveis)
                  )
                )) %>%
              # group_by(var_0001_situacao,var_0048_qtd_serv_p) %>%
              summarise(n = n()) %>%
              collect() %>%
-             setDT() #%>%
+             setDT() #%>% View
              # setnames('idade_servidor',"faixa_etaria")
            Sys.sleep(30)
            return(ativos_equidade)
@@ -226,363 +334,286 @@ ativos_equidade_list <-
 # juntando todas as competências
 ativos_equidade_tab <- rbindlist(ativos_equidade_list,fill = T)
 
-# transformando faixas etárias
+#### > ajustes nas variáveis ----
+
+# compatibilizações com Censo
 ativos_equidade_tab[,`:=`(
 
-  # faixa etária como fator
-  faixa_etaria.f =
-    ifelse(grepl("18\\]$",idade_servidor),
-           "Até 18 anos",
-           ifelse(grepl("^\\[60",idade_servidor),
-                  "60 anos ou mais",
-                  idade_servidor)
-           ) %>%
-    gsub("\\[|\\)","",.) %>%
-    gsub(","," a ",.) %>%
-    factor(ordered = T),
+  # # faixa etária como fator
+  # faixa_etaria.f =
+  #   ifelse(grepl("18\\]$",idade_servidor),
+  #          "Até 18 anos",
+  #          ifelse(grepl("^\\[60",idade_servidor),
+  #                 "60 anos ou mais",
+  #                 idade_servidor)
+  #          ) %>%
+  #   gsub("\\[|\\)","",.) %>%
+  #   gsub(","," a ",.) %>%
+  #   factor(ordered = T),
+
 
   # sexo como 'Homens' ou 'Mulheres
-  sexo = ifelse(co_sexo == "F","Mulheres","Homens")
+  sexo = ifelse(co_sexo == "F","Mulheres","Homens"),
+
+
+  ## cor/origem étnica agregando pretos e pardos em negros
+  no_cor_origem_etnica_ag = ifelse(no_cor_origem_etnica %in% c("PRETA","PARDA"),
+                                   "NEGRA",
+                                   no_cor_origem_etnica)
   )]
 
-# lendo base do censo e compatibilizando
-base_censo <- readRDS('data-raw/data_pfgp/base_censo.rds') %>%
-  setDT %>%
-  # tirando '25 ou mais' e '65 ou mais' e variáveis
-  filter(!faixa_etaria %in% c('25 anos ou mais','65 anos ou mais','25 a 64 anos')) %>%
-
-  # limites da maior e da menor idade
-  # .[,c("lim_inferior","lim_superior") :=(str_split_fixed(faixa_etaria," a ",n = 2) %>% as.data.table)]
-  .[,ls := (str_split_fixed(faixa_etaria," a ",n = 2)[,2] %>%
-              gsub("[[:alpha:]]","",.) %>%
-              gsub("[[:space:]]","",.) %>%
-              as.numeric())]
-# se vazio, 80 ou mais
-base_censo[,ls := ifelse(is.na(ls),80,ls)]
-
-# recriando mesma faixa etária do tabelão
-base_censo[,faixa_etaria.p := cut(ls,
-                                  breaks = c(0,18,30,45,60,120),
-                                  include.lowest = T,
-                                  right = F
-                                  )]
-# somando população na nova faixa etária (só ensino superior)
-base_censo[,pop.n := gsub("-","0",populacao) %>% as.numeric]
-base_censo_fx <- base_censo[nivel_instrucao == "Superior completo",
-                            .(populacao = sum(pop.n )),
-                            .(no_cor_origem_etnica,
-                              sexo,
-                              no_regiao,
-                              faixa_etaria.p)]
-
-# somando população na nova faixa etária (todos)
-base_censo_fx_all <- base_censo[,.(populacao_all = sum(pop.n )),
-                                .(no_cor_origem_etnica,
-                                  sexo,
-                                  no_regiao,
-                                  faixa_etaria.p)]
-
-# juntando as bases
-ativos_equidade_tab <-
-  left_join(
-    ativos_equidade_tab,
-    base_censo_fx,
-    by = c("no_cor_origem_etnica" = "no_cor_origem_etnica",
-           "sexo" = "sexo",
-           "no_regiao_naturalidade" = "no_regiao",
-           "idade_servidor" = "faixa_etaria.p")
-  ) %>%
-  left_join(
-    base_censo_fx_all,
-    by = c("no_cor_origem_etnica" = "no_cor_origem_etnica",
-           "sexo" = "sexo",
-           "no_regiao_naturalidade" = "no_regiao",
-           "idade_servidor" = "faixa_etaria.p")
-  )
-
-# marcando registros de não-informação (não se aplica, nao informado, etc)
-categorias_interesse <-
-  c("no_cor_origem_etnica",
-    "sexo",
-    "faixa_etaria.f",
-    "no_regiao_naturalidade")
-ativos_equidade_tab[,any_vazio :=
-                      eval(
-                        parse(
-                          text =
-                            paste0(
-                              # "grepl(",
-                              "(",
-                              categorias_interesse,
-                              " %in% c(NA,'NEGRA','NAO_SE_APLICA','N�O INFORMADO'))",
-                              collapse = "|"
-                              )
-                          )
-                        )]
-
-## registrando vazios a serem excluídos
-ativos_equidade_tab[,.(tot_siape = sum(n),
-                       sum_vazio_ziape = sum(any_vazio*n),
-                       mean_vazio_siape = 100*sum(any_vazio*n)/sum(n)),
-                    .(compet)] -> vazios_excluidos
-
-ativos_equidade_tab <- filter(ativos_equidade_tab,!any_vazio)
+## novas variáveis de interesse
+ativos_equidade_tab[,`:=`(
+  cor_sexo    =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica),", ",sexo),
+  cor_sexo_ag =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica_ag),", ",sexo)
+)]
 
 
-## percentuais dos grupos cruazdos e total 'NÃO-SIAPE', mês a mes
-ativos_equidade_tab[,`:=`(n_fora_siape = populacao-n,
-                          n_fora_siape_all = populacao_all-n,
-                          p_siape = n/sum(n),
-                          p_censo = populacao/sum(populacao),
-                          p_censo_all = populacao_all/sum(populacao_all)),
-                    .(compet)]
 
-## razões de equidade nos grupos cruzados, mês a mes
-ativos_equidade_tab[,`:=`(equidade_cruzados = p_siape/p_censo,
-                          equidade_cruzados_all = p_siape/p_censo_all)]
+# termos que significam NA como NA
+categorias_interesse <- setdiff(names(ativos_equidade_tab),
+                                c('compet','var_0001_situacao',"var_0048_qtd_serv_p","n"))
 
-## agregando sexo e raça
-ativos_equidade_tab[,cor_sexo :=
-                      paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica),", ",sexo)
-                      # paste0(sexo," ",str_to_title(no_cor_origem_etnica)) %>%
-                      # ifelse(co_sexo == "M" & no_cor_origem_etnica != "INDIGENA",
-                      #        gsub("a$","os",.),
-                      #        .) %>%
-                      # gsub("a$","as",.)
-                    ]
+ativos_equidade_tab[,c(categorias_interesse) :=
+                      lapply(.SD,function(x){
+                        ifelse(x %in% c(NA,'NAO_SE_APLICA','N�O INFORMADO'),
+                               NA,
+                               x)
+                      }),
+                    .SDcols = categorias_interesse
+]
 
-categorias_interesse <-
-  c(#"no_cor_origem_etnica",
-    # "sexo",
-    "cor_sexo",
-    "faixa_etaria.f",
-    "no_regiao_naturalidade")
 
-## razões de equidade marginais, mês a mes
-sapply(categorias_interesse,
-       function(ct){
-         ativos_equidade_tab %>%
-           copy %>%
-           .[,variavel := ct] %>%
-           .[,.(n = sum(n),
-                n_fora_siape = sum(n_fora_siape),
-                n_fora_siape_all = sum(n_fora_siape_all),
-                populacao = sum(populacao),
-                populacao_all = sum(populacao_all )),
-             by = c("compet","variavel",ct)] %>%
-           .[,`:=`(p_siape = n/sum(n),
-                   p_censo = populacao/sum(populacao),
-                   p_censo_all = populacao_all/sum(populacao_all)),
-             .(compet)] %>%
-           .[,`:=`(equidade_marginais = p_siape/p_censo,
-                   equidade_marginais_all = p_siape/p_censo_all)]%>%
-           setnames(ct,"categoria")
-       },
-       simplify = F) %>%
-  rbindlist(fill = T) -> ativos_equidade_marginais
+# faixa de 25 a 75 anos no SIAPE
+ativos_equidade_tab[,is_25_75 := idade_servidor >= "[25,30)" & idade_servidor < "[75,120)"]
 
-## função chi-quadrado
-calcula_chisq <- function(n_g1,n_g2){
-  M <- as.table(rbind(n_g1,n_g2))
-  chisq.test(M)$statistic
+
+#### >  equidades, proporções e chi-quadrados cruzados -----
+
+## função para agregar nas variáveis de interesse e juntar com censo
+agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
+  if(cruzados){
+    # agregando siape
+    dt_siape_ag <- dt_siape[,.(n_siape = sum(n,na.rm = T),
+                               n_siape_25_75 = sum(n*is_25_75,na.rm = T)),
+                            by = c('compet',vars.v)] %>%
+      # percentuais no SIAPE
+      .[,`:=`(p_siape = n_siape/sum(n_siape),
+              p_siape_25_75 = n_siape_25_75/sum(n_siape_25_75)),.(compet)]
+
+    # agregando censo
+    dt_censo_ag <- dt_censo[,.(n_censo = sum(populacao_estimada,na.rm = T),
+                               n_censo_sup = sum(populacao_estimada*(nivel_instrucao %in% 7),
+                                                 na.rm = T),
+                               n_censo_25_75 = sum(populacao_estimada*(fx_li >= 25 & fx_ls < 75),
+                                                   na.rm = T)
+                               ),
+                            by = c(vars.v)] %>%
+      # percentuais no Censo
+      .[,`:=`(p_censo = n_censo/sum(n_censo,na.rm = T),
+              p_censo_sup = n_censo_sup/sum(n_censo_sup,na.rm = T),
+              p_censo_25_75 = n_censo_25_75/sum(n_censo_25_75,na.rm = T))]
+
+    # juntando
+    dt_ag <- left_join(dt_siape_ag,dt_censo_ag,by = vars.v)
+
+
+    # identificando onde tem vazios
+    dt_ag[,any_vazio :=
+            eval(
+              parse(
+                text =
+                  paste0(
+                    # "grepl(",
+                    "(",
+                    vars.v,
+                    " %in% c(NA,'NAO_SE_APLICA','N�O INFORMADO'))",
+                    collapse = "|"
+                    )
+                )
+              )
+          ]
+
+  }else{
+
+    # agregando siape
+    dt_siape_ag <-
+      melt(dt_siape,
+           id.vars = c('compet','is_25_75','n'),
+           measure.vars = vars.v,
+           variable.name = 'variavel',
+           value.name = 'categoria') %>%
+      .[,.(n_siape = sum(n,na.rm = T),
+           n_siape_25_75 = sum(n*is_25_75,na.rm = T)),
+        by = c('compet','variavel','categoria')] %>%
+      # percentuais no SIAPE
+      .[,`:=`(p_siape = n_siape/sum(n_siape),
+              p_siape_25_75 = n_siape_25_75/sum(n_siape_25_75)),
+        .(compet,variavel)]
+
+    # agregando censo
+    dt_censo_ag <-
+      dt_censo %>%
+      copy %>%
+      .[,`:=`(compet = 2022,
+              populacao_sup = populacao_estimada*(nivel_instrucao %in% 7),
+              populacao_25_75 = populacao_estimada*(fx_li >= 25 & fx_ls < 75))] %>%
+      melt(id.vars = c('compet','populacao_estimada','populacao_sup','populacao_25_75'),
+           measure.vars = vars.v,
+           variable.name = 'variavel',
+           value.name = 'categoria') %>%
+      .[,.(n_censo = sum(populacao_estimada,na.rm = T),
+           n_censo_sup = sum(populacao_sup,na.rm = T),
+           n_censo_25_75 = sum(populacao_25_75,na.rm = T)
+           ),
+        by = c('variavel','categoria')] %>%
+      # percentuais no Censo
+      .[,`:=`(p_censo = n_censo/sum(n_censo,na.rm = T),
+              p_censo_sup = n_censo_sup/sum(n_censo_sup,na.rm = T),
+              p_censo_25_75 = n_censo_25_75/sum(n_censo_25_75,na.rm = T)),
+        .(variavel)]
+
+
+    # juntando
+    dt_ag <- left_join(dt_siape_ag,dt_censo_ag,by = c("variavel","categoria"))
+
+
+    # identificando onde tem vazios
+    dt_ag[,any_vazio := is.na(categoria) | grepl("(^| )((NA)|(NAO_SE_APLICA)|(N.*O INFORMADO))($|\\,| )",
+                                                 categoria,
+                                                 ignore.case = T)]
+
+  }
+  return(dt_ag)
 }
 
 
 ## função chi-quadrado para aderencia
 calcula_chisq_aderencia <- function(p.v,pi.v){
-  stopifnot(sum(p.v) %in% c(1,100) & sum(pi.v)  %in% c(1,100))
-  if(sum(p.v) == 100) p.v <- p.v/100
-  if(sum(pi.v) == 100) pi.v <- pi.v/100
-  chisq.n <- sum(((p.v - pi.v)^2)/pi.v)
+  # stopifnot(sum(p.v) %in% c(1,100) & sum(pi.v)  %in% c(1,100))
+
+  #retirando vazios e zeros
+  p_vazios_n0  <- is.finite(p.v)
+  pi_vazios_n0 <- is.finite(pi.v) & pi.v > 0
+
+  p.v_n <- p.v[p_vazios_n0 & pi_vazios_n0]
+  pi.v_n <- pi.v[p_vazios_n0 & pi_vazios_n0]
+
+  if(length(p.v_n) >= 2 & length(pi.v_n) >= 2){
+    if(sum(p.v_n) > 1) p.v_n <- p.v_n/100
+    if(sum(pi.v_n) > 1) pi.v_n <- pi.v_n/100
+    chisq.n <- sum(((p.v_n - pi.v_n)^2)/pi.v_n)
+  }else{
+    return(NA)
+  }
 }
 
+## percentuais nos cruzamentos de interesse
+ativos_equidade_cruzados <- agrega_junta_censo(ativos_equidade_tab,
+                                               pessoas_censo,
+                                               vars.v = c("no_cor_origem_etnica_ag",
+                                                          "sexo",
+                                                          "idade_servidor",
+                                                          "no_regiao_naturalidade"))
+## razões de equidade nos grupos cruzados, mês a mes
+ativos_equidade_cruzados[,`:=`(equidade_cruzados = p_siape/p_censo,
+                               equidade_cruzados_sup = p_siape/p_censo_sup,
+                               equidade_cruzados_25_75 = p_siape_25_75/p_censo_25_75)]
 
-## obtendo menor proporçao viável
-ativos_equidade_tab[,geral_siape := sum(n),.(compet)]
-ativos_equidade_tab[,`:=`(razao_prop     = ifelse(populacao > geral_siape,(1-p_censo)/p_censo,NA),
-                          razao_prop_all = ifelse(populacao_all > geral_siape,(1-p_censo_all)/p_censo_all,NA))]
+
+## total observado no SIAPE no mês
+ativos_equidade_cruzados[,`:=`(geral_siape = sum(n_siape),
+                               geal_siape_25_75 = sum(n_siape_25_75)),.(compet)]
+
+## maior razão de probabilidade possível
+ativos_equidade_cruzados[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
+                               razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
+                               razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
+                                                         (1-p_censo_25_75)/p_censo_25_75,
+                                                         NA))]
+
+
 
 ## medidas qui-quadrado cruzadas, mês a mês
-ativos_equidade_tab[compet > 201912,.(n_categ = .N,
-                                      total_geral = sum(populacao),
-                                      total_geral_all = sum(populacao_all),
-                                      qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
-                                      qui_quadrado_all = calcula_chisq_aderencia(p_siape,p_censo_all),
-                                      max_qui = max(razao_prop,na.rm = T),
-                                      max_qui_all = max(razao_prop_all,na.rm = T)),
-                    .(compet)] -> equidade_chisq_cruzados
+ativos_equidade_cruzados[!(any_vazio),# & compet > 201912,
+                         .(n_categ = .N,
+                           qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
+                           qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                           qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
+                           max_qui = max(razao_prop,na.rm = T),
+                           max_qui_sup = max(razao_prop_sup,na.rm = T),
+                           max_qui_25_75 = max(razao_prop_25_75,na.rm = T)),
+                         .(compet)] -> equidade_chisq_cruzados
 
-# ## contingência
-# equidade_chisq_cruzados[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
-#                               C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
-#                               max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
-equidade_chisq_cruzados[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
-                              coef_contin_all = 100*sqrt(qui_quadrado_all/max_qui_all))]
-
-
-## obtendo menor proporçao viável
-ativos_equidade_marginais[,geral_siape := sum(n),.(compet,variavel)]
-ativos_equidade_marginais[,`:=`(razao_prop     = ifelse(populacao > geral_siape,(1-p_censo)/p_censo,NA),
-                                razao_prop_all = ifelse(populacao_all > geral_siape,(1-p_censo_all)/p_censo_all,NA))]
-
-
-
-## qui-quadrado marginais, mês a mês
-ativos_equidade_marginais[,.(n_categ = .N,
-                             total_geral = sum(populacao),
-                             total_geral_all = sum(populacao_all),
-                             qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
-                             qui_quadrado_all = calcula_chisq_aderencia(p_siape,p_censo_all),
-                             max_qui = max(razao_prop,na.rm = T),
-                             max_qui_all = max(razao_prop_all,na.rm = T)),
-                          .(variavel,compet)] -> equidade_chisq_marginais
 
 ## contingência
-# equidade_chisq_marginais[,`:=`(C = sqrt(qui_quadrado/(qui_quadrado +total_geral)),
-#                                C_all = sqrt(qui_quadrado_all/(qui_quadrado_all +total_geral_all)),
-#                                max_x = ((1/2)*((n_categ-1)/n_categ))^(1/4))]
+equidade_chisq_cruzados[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
+                              coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
+                              coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75))]
+
+
+
+
+#### >  equidades, proporções e chi-quadrados marginais -----
+
+## percentuais marginais nas variáveis de interesse e outras
+ativos_equidade_marginais <- agrega_junta_censo(ativos_equidade_tab,
+                                                pessoas_censo,
+                                                vars.v = c("no_cor_origem_etnica",
+                                                           "no_cor_origem_etnica_ag",
+                                                           "sexo",
+                                                           "cor_sexo",
+                                                           "cor_sexo_ag",
+                                                           "idade_servidor",
+                                                           "pcd",
+                                                           "no_regiao_naturalidade"),
+                                                cruzados = F)
+
+## razões de equidade cruzadas
+ativos_equidade_marginais[,`:=`(equidade_marginais = p_siape/p_censo,
+                                equidade_marginais_sup = p_siape/p_censo_sup,
+                                equidade_cruzados_25_75 = p_siape_25_75/p_censo_25_75)]
+
+## total observado no SIAPE no mês
+ativos_equidade_marginais[,`:=`(geral_siape = sum(n_siape),
+                                geal_siape_25_75 = sum(n_siape_25_75)),
+                          .(compet,variavel)]
+
+## maior razão de probabilidade possível
+ativos_equidade_marginais[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
+                                razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
+                                razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
+                                                          (1-p_censo_25_75)/p_censo_25_75,
+                                                         NA))]
+
+
+
+## medidas qui-quadrado cruzadas, mês a mês
+ativos_equidade_marginais[!(any_vazio),# & compet > 201912,
+                          .(n_categ = .N,
+                            qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
+                            qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                            qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
+                            max_qui = max(razao_prop,na.rm = T),
+                            max_qui_sup = max(razao_prop_sup,na.rm = T),
+                            max_qui_25_75 = max(razao_prop_25_75,na.rm = T)),
+                          .(variavel,compet)] -> equidade_chisq_marginais
+
+
+## contingência
 equidade_chisq_marginais[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
-                               coef_contin_all = 100*sqrt(qui_quadrado_all/max_qui_all))]
+                               coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
+                               coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75))]
 
 
-equidade_chisq_marginais %>%
-  ggplot(aes(x = compet,y = qui_quadrado/1e+3,color = variavel)) +
-  geom_line() +
-  geom_point(size = 2) +
-  geom_line(data = equidade_chisq_cruzados,
-            aes(x = compet,y = qui_quadrado/1e+3,col = "geral")
-            )
-
-equidade_chisq_marginais %>% setorder(compet,-coef_contin_all)
-equidade_chisq_marginais[,variavel.f := factor(variavel,levels = variavel %>% unique(),ordered = T)]
 
 
-equidade_chisq_marginais %>%
-  ggplot_cat(aes(x = compet,y = coef_contin_all,color = variavel.f)) +
-  ylim(c(0,1.2*max(equidade_chisq_cruzados$coef_contin_all)))+
-  geom_line(size = 1.3) +
-  geom_point(size = 2) +
-  geom_text(aes(label = round(coef_contin_all,2)),
-            vjust = -1,
-            show.legend = F) +
-  geom_line(data = equidade_chisq_cruzados,
-            aes(x = compet,y = coef_contin_all,col = "Total"),
-            size = 1.3
-  ) +
-  geom_point(data = equidade_chisq_cruzados,
-            aes(x = compet,y = coef_contin_all,col = "Total"),
-            size = 2
-  )  +
-  geom_text(data = equidade_chisq_cruzados,
-            aes(x = compet,
-                y = coef_contin_all,
-                label = round(coef_contin_all,2),
-                col = "Total"),
-            vjust = -1,
-            show.legend = F) +
-  labs(col = NULL)
-
-
-## razões de EQUIDADE X coeficientes de contingência
-# var_graph <- "no_cor_origem_etnica"
-codf <- max(ativos_equidade_marginais$equidade_marginais)/max(equidade_chisq_cruzados$coef_contin_all,na.rm = T)
-range_eq <- range(ativos_equidade_marginais$equidade_marginais)
-
-grafs_categ <-
-  lapply(ativos_equidade_marginais$variavel %>% unique,
-         function(var_graph){
-
-           dt_var <- ativos_equidade_marginais[variavel == var_graph]
-           dt_var_contin <- equidade_chisq_marginais[variavel == var_graph,]
-
-           # separando sexo, caso tenha
-           if(var_graph == 'cor_sexo'){
-             dt_var[,`:=`(subcateg = gsub(".*\\, ","",categoria),
-                          categoria = gsub("\\,.*","",categoria))]
-           }
-
-           dt_var %>%
-             ggplot_cat(
-               aes(x = zoo::as.yearmon(as.character(compet),format = "%Y%m"))
-             ) +
-             ylim(c(0,range_eq[2])) +
-             geom_line(
-               aes(
-                 y = equidade_marginais_all,
-                 col = as.character(categoria)
-               ),
-               size = 1) +
-             # geom_col(
-             #   aes(
-             #     # y = equidade_marginais,
-             #     y = p_siape - p_censo,
-             #     fill = as.character(categoria)
-             #   ),
-             #   size = 1) +
-             geom_point(
-               aes(
-                 y = equidade_marginais_all,
-                 col = as.character(categoria)
-               ),size = 2) +
-             geom_hline(aes(yintercept = 1),size = 1.2) +
-             # geom_hline(aes(yintercept = 0)) +
-             geom_line(
-               data = dt_var_contin,
-               aes(
-                 x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
-                 y = codf*coef_contin_all,
-                 linetype = "Coef.Contingência\n da variável"),
-               size = 1.3
-             ) +
-             geom_text(
-               data = dt_var_contin,
-               aes(
-                 x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
-                 y = codf*coef_contin_all,
-                 label = round(coef_contin_all,2),
-                 linetype = "Coef.Contingência\n da variável"),
-               vjust = -2
-               # size = 1.3
-             ) +
-             geom_line(
-               data = equidade_chisq_cruzados,
-               aes(
-                 x = zoo::as.yearmon(as.character(compet),format = "%Y%m"),
-                 y = codf*coef_contin_all,
-                 linetype = "Coef.Contingência\n geral"),
-               size = 1.3
-             ) +
-             scale_linetype_manual(
-               values = c("Coef.Contingência\n da variável" = 2,
-                          "Coef.Contingência\n geral" = 3)
-             ) +
-             scale_y_continuous(
-               name = "Índide de equidade",
-               limits = c(0,range_eq[2]),
-               sec.axis = sec_axis(coef_contin_all ~./codf,name = "Coef. de Contingência")
-             ) +
-             labs(title = var_graph,
-                  y = "Índice equidade",
-                  col = NULL,
-                  x = NULL,
-                  linetype = NULL) -> p
-           if(var_graph == "cor_sexo"){
-             p <- p + facet_wrap(subcateg ~ .,nrow = 1,scale = 'fixed')
-           }
-           p
-         }
-         )
-
-
-# plot_layout(grafs_categ[[1]] + grafs_categ[[2]] + grafs_categ[[3]] + grafs_categ[[4]],ncol = 2)
-plot_layout(grafs_categ[[1]] / (grafs_categ[[2]] + grafs_categ[[3]]) ,nrow = 2)
-
-# salvando base
-saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade.rds')
-saveRDS(vazios_excluidos,'data-raw/data_pfgp/ativos_equidade_vazios.rds')
+### > salvando bases -------
+saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade_tab.rds')
 
 # salvando coeficientes
-save(ativos_equidade_marginais,
+save(ativos_equidade_cruzados,
+     ativos_equidade_marginais,
      equidade_chisq_cruzados,
      equidade_chisq_marginais,
      file = 'data-raw/data_pfgp/ativos_equidade_marginais.rda')
