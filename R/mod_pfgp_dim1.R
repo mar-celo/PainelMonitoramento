@@ -148,11 +148,17 @@ mod_pfgp_dim1_server <- function(id) {
     })
 
     output$texto_razao_equidade_atv <- shiny::renderUI({
-      # arquivo_html <- readLines(here::here('docs/indicador_11_equidade_distribuicao.html'))
-      # shiny::withMathJax(shiny::HTML(arquivo_html))
+      caminho_arquivo <- dplyr::case_when(
+        file.exists("inst/relatorios/indicador_11_equidade_distribuicao.html") ~ "inst/relatorios/indicador_11_equidade_distribuicao.html",
+        file.exists("relatorios/indicador_11_equidade_distribuicao.html") ~ "relatorios/indicador_11_equidade_distribuicao.html",
+        TRUE ~ system.file("relatorios", "indicador_11_equidade_distribuicao.html", package = "PainelMonitoramento")
+      )
+
+      # Pega a data/hora da última alteração do arquivo como versão
+      v_cache <- if (file.exists(caminho_arquivo)) file.mtime(caminho_arquivo) else Sys.time()
 
       tags$iframe(
-        src = "relatorios/indicador_11_equidade_distribuicao.html",
+        src = paste0("relatorios/indicador_11_equidade_distribuicao.html?v=",as.numeric(v_cache)),
         width = "100%",
         height = "1500px",
         style = "border:none;"

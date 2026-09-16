@@ -111,14 +111,17 @@ app_ui <- function(request) {
 #' @noRd
 golem_add_external_resources <- function() {
 
-  shiny::addResourcePath(
-    "www",
-    "inst/app/www"
+  shiny::addResourcePath("www", "inst/app/www")
+
+  # Tenta pegar da pasta no repositório/raiz do app; se não achar, usa o pacote instalado
+  caminho_relatorios <- dplyr::case_when(
+    dir.exists("inst/relatorios") ~ file.path(getwd(), "inst/relatorios"),
+    dir.exists("relatorios") ~ file.path(getwd(), "relatorios"),
+    TRUE ~ system.file("relatorios", package = "PainelMonitoramento")
   )
 
-  relatorios_path <- system.file("relatorios", package = "PainelMonitoramento")
-  if (nzchar(relatorios_path) && dir.exists(relatorios_path)) {
-    shiny::addResourcePath("relatorios", relatorios_path)
+  if (nzchar(caminho_relatorios) && dir.exists(caminho_relatorios)) {
+    shiny::addResourcePath("relatorios", caminho_relatorios)
   }
 
   shiny::tags$head(
