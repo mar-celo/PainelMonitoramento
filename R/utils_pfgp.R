@@ -40,6 +40,7 @@
     legend.position   = "bottom",
     legend.title      = ggplot2::element_text(size = .txt_size, face = "bold"),
     legend.text       = ggplot2::element_text(size = .txt_size),
+    legend.direction = "horizontal",
     panel.grid.minor       = ggplot2::element_blank(),
     panel.grid.major.x     = ggplot2::element_blank(),
     axis.title        = ggplot2::element_text(size = .txt_size),

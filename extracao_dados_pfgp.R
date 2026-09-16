@@ -572,7 +572,7 @@ ativos_equidade_marginais <- agrega_junta_censo(ativos_equidade_tab,
 ## razões de equidade cruzadas
 ativos_equidade_marginais[,`:=`(equidade_marginais = p_siape/p_censo,
                                 equidade_marginais_sup = p_siape/p_censo_sup,
-                                equidade_cruzados_25_75 = p_siape_25_75/p_censo_25_75)]
+                                equidade_marginais_25_75 = p_siape_25_75/p_censo_25_75)]
 
 ## total observado no SIAPE no mês
 ativos_equidade_marginais[,`:=`(geral_siape = sum(n_siape),
@@ -675,26 +675,52 @@ ingressos_equidade <-
          sg_regime_juridico %in% 'EST',
          var_0048_qtd_serv_p %in% 1
   ) %>%
-  mutate(ano_ingresso = year(dt_ocor_ingr_spub_serv),
-         idade_servidor = cut(idade_servidor,
-                              breaks = c(0,18,30,45,60,120),
-                              include.lowest = T,
-                              right = F
-  )
+  mutate(
+    # Diferença da competência para a ocorrência (resultado positivo)
+    idade_ingresso = datediff(dt_nasc_serv, dt_ocor_ingr_spub_serv)/365.25,
+
+    # ano de ingresso
+    ano_ingresso = year(dt_ocor_ingr_spub_serv),
+
+    # ano de nascimento do servidor
+    ano_nasc = as.numeric(year(dt_nasc_serv)),
+
+    # faixa etária do servidor na data de ingresso
+    idade_servidor = cut(idade_ingresso,
+                         breaks = breaks_faixa_etaria,
+                         include.lowest = T,
+                         right = F),
+
+    # geração (ano de nascimento)
+    geracao = cut(ano_nasc,
+                  breaks = breaks_geracao,
+                  right = FALSE,
+                  include.lowest = T,
+                  labels = c("Boomers",
+                             "X",
+                             "Millenials",
+                             "Z")),
+
+    # pcd
+    pcd = ifelse(co_grupo_deficiencia_fisica %in% 0,
+                 "Pessoa SEM deficiência",
+                 "Pessoa COM deficiência")
   ) %>%
   # filtrando 2010 em diante
-  filter(ano_ingresso >= 2010) %>%
+  filter(ano_ingresso >= 2010)  %>%
   group_by(
-    ano_ingresso,
     across(
       all_of(
-        c(agreg_min ,
+        c('compet',
+          'ano_ingresso',
+          agreg_min ,
           "var_0001_situacao",
-          "var_0048_qtd_serv_p") %>%
-          # das colunas listadas, pegando apenas as colunas disponíveis
-          intersect(colunas_dispoiniveis)
+          "var_0048_qtd_serv_p") #%>%
+        # das colunas listadas, pegando apenas as colunas disponíveis
+        # intersect(colunas_dispoiniveis)
       )
-    )) %>%
+      )
+    ) %>%
   # group_by(var_0001_situacao,var_0048_qtd_serv_p) %>%
   summarise(n = n()) %>%
   collect() %>%
@@ -719,6 +745,63 @@ ingressos_equidade[,`:=`(
   # sexo como 'Homens' ou 'Mulheres
   sexo = ifelse(co_sexo == "F","Mulheres","Homens")
 )]
+
+#### > ajustes nas variáveis ----
+
+# compatibilizações com Censo
+ativos_equidade_tab[,`:=`(
+
+  # # faixa etária como fator
+  # faixa_etaria.f =
+  #   ifelse(grepl("18\\]$",idade_servidor),
+  #          "Até 18 anos",
+  #          ifelse(grepl("^\\[60",idade_servidor),
+  #                 "60 anos ou mais",
+  #                 idade_servidor)
+  #          ) %>%
+  #   gsub("\\[|\\)","",.) %>%
+  #   gsub(","," a ",.) %>%
+  #   factor(ordered = T),
+
+
+  # sexo como 'Homens' ou 'Mulheres
+  sexo = ifelse(co_sexo == "F","Mulheres","Homens"),
+
+
+  ## cor/origem étnica agregando pretos e pardos em negros
+  no_cor_origem_etnica_ag = ifelse(no_cor_origem_etnica %in% c("PRETA","PARDA"),
+                                   "NEGRA",
+                                   no_cor_origem_etnica)
+)]
+
+## novas variáveis de interesse
+ativos_equidade_tab[,`:=`(
+  cor_sexo    =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica),", ",sexo),
+  cor_sexo_ag =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica_ag),", ",sexo)
+)]
+
+
+
+# termos que significam NA como NA
+categorias_interesse <- setdiff(names(ativos_equidade_tab),
+                                c('compet','var_0001_situacao',"var_0048_qtd_serv_p","n"))
+
+ativos_equidade_tab[,c(categorias_interesse) :=
+                      lapply(.SD,function(x){
+                        ifelse(x %in% c(NA,'NAO_SE_APLICA','N�O INFORMADO'),
+                               NA,
+                               x)
+                      }),
+                    .SDcols = categorias_interesse
+]
+
+
+# faixa de 25 a 75 anos no SIAPE
+ativos_equidade_tab[,is_25_75 := idade_servidor >= "[25,30)" & idade_servidor < "[75,120)"]
+
+
+
+## > versão anterior que alimenta o shiny ----
 
 
 df_tabelao_202604 <- df_tabelao %>%
