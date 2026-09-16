@@ -669,7 +669,7 @@ agreg_min_ingr <- c("CO_ORGAO",
                     'NO_REGIAO_NATURALIDADE')
 
 
-ingressos_equidade <-
+ingressos_equidade_tab <-
   df_tabelao  %>%
   filter(#var_0001_situacao %in% 'ATIVO',
          sg_regime_juridico %in% 'EST',
@@ -677,7 +677,7 @@ ingressos_equidade <-
   ) %>%
   mutate(
     # Diferença da competência para a ocorrência (resultado positivo)
-    idade_ingresso = datediff(dt_nasc_serv, dt_ocor_ingr_spub_serv)/365.25,
+    idade_ingresso = datediff(dt_ocor_ingr_spub_serv,dt_nasc_serv)/365.25,
 
     # ano de ingresso
     ano_ingresso = year(dt_ocor_ingr_spub_serv),
@@ -711,8 +711,7 @@ ingressos_equidade <-
   group_by(
     across(
       all_of(
-        c('compet',
-          'ano_ingresso',
+        c('ano_ingresso',
           agreg_min ,
           "var_0001_situacao",
           "var_0048_qtd_serv_p") #%>%
@@ -724,44 +723,12 @@ ingressos_equidade <-
   # group_by(var_0001_situacao,var_0048_qtd_serv_p) %>%
   summarise(n = n()) %>%
   collect() %>%
-  setDT()
+  setDT() %>%
+  setnames(c("ano_ingresso"),c("compet"))
 
 
 # transformando faixas etárias
-ingressos_equidade[,`:=`(
-
-  # faixa etária como fator
-  faixa_etaria.f =
-    ifelse(grepl("18\\]$",idade_servidor),
-           "Até 18 anos",
-           ifelse(grepl("^\\[60",idade_servidor),
-                  "60 anos ou mais",
-                  idade_servidor)
-    ) %>%
-    gsub("\\[|\\)","",.) %>%
-    gsub(","," a ",.) %>%
-    factor(ordered = T),
-
-  # sexo como 'Homens' ou 'Mulheres
-  sexo = ifelse(co_sexo == "F","Mulheres","Homens")
-)]
-
-#### > ajustes nas variáveis ----
-
-# compatibilizações com Censo
-ativos_equidade_tab[,`:=`(
-
-  # # faixa etária como fator
-  # faixa_etaria.f =
-  #   ifelse(grepl("18\\]$",idade_servidor),
-  #          "Até 18 anos",
-  #          ifelse(grepl("^\\[60",idade_servidor),
-  #                 "60 anos ou mais",
-  #                 idade_servidor)
-  #          ) %>%
-  #   gsub("\\[|\\)","",.) %>%
-  #   gsub(","," a ",.) %>%
-  #   factor(ordered = T),
+ingressos_equidade_tab[,`:=`(
 
 
   # sexo como 'Homens' ou 'Mulheres
@@ -775,7 +742,7 @@ ativos_equidade_tab[,`:=`(
 )]
 
 ## novas variáveis de interesse
-ativos_equidade_tab[,`:=`(
+ingressos_equidade_tab[,`:=`(
   cor_sexo    =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica),", ",sexo),
   cor_sexo_ag =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica_ag),", ",sexo)
 )]
@@ -783,21 +750,138 @@ ativos_equidade_tab[,`:=`(
 
 
 # termos que significam NA como NA
-categorias_interesse <- setdiff(names(ativos_equidade_tab),
+categorias_interesse <- setdiff(names(ingressos_equidade_tab),
                                 c('compet','var_0001_situacao',"var_0048_qtd_serv_p","n"))
 
-ativos_equidade_tab[,c(categorias_interesse) :=
-                      lapply(.SD,function(x){
-                        ifelse(x %in% c(NA,'NAO_SE_APLICA','N�O INFORMADO'),
-                               NA,
-                               x)
-                      }),
-                    .SDcols = categorias_interesse
-]
+ingressos_equidade_tab[,c(categorias_interesse) :=
+                         lapply(.SD,function(x){
+                           ifelse(x %in% c(NA,'NAO_SE_APLICA','N�O INFORMADO'),
+                                  NA,
+                                  x)
+                           }),
+                       .SDcols = categorias_interesse]
 
 
 # faixa de 25 a 75 anos no SIAPE
-ativos_equidade_tab[,is_25_75 := idade_servidor >= "[25,30)" & idade_servidor < "[75,120)"]
+ingressos_equidade_tab[,is_25_75 := idade_servidor >= "[25,30)" & idade_servidor < "[75,120)"]
+
+
+#### >  equidades, proporções e chi-quadrados cruzados -----
+
+
+
+## percentuais nos cruzamentos de interesse
+ingressos_equidade_cruzados <- agrega_junta_censo(ingressos_equidade_tab,
+                                                  pessoas_censo,
+                                                  vars.v = c("no_cor_origem_etnica_ag",
+                                                             "sexo",
+                                                             "idade_servidor",
+                                                             "no_regiao_naturalidade"))
+
+
+## razões de equidade nos grupos cruzados, mês a mes
+ingressos_equidade_cruzados[,`:=`(equidade_cruzados = p_siape/p_censo,
+                                  equidade_cruzados_sup = p_siape/p_censo_sup,
+                                  equidade_cruzados_25_75 = p_siape_25_75/p_censo_25_75)]
+
+
+## total observado no SIAPE no mês
+ingressos_equidade_cruzados[,`:=`(geral_siape = sum(n_siape),
+                                  geal_siape_25_75 = sum(n_siape_25_75)),.(compet)]
+
+## maior razão de probabilidade possível
+ingressos_equidade_cruzados[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
+                                  razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
+                                  razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
+                                                            (1-p_censo_25_75)/p_censo_25_75,
+                                                            NA))]
+
+
+
+## medidas qui-quadrado cruzadas, mês a mês
+ingressos_equidade_cruzados[!(any_vazio),# & compet > 201912,
+                            .(n_categ = .N,
+                              qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
+                              qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                              qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
+                              max_qui = max(razao_prop,na.rm = T),
+                              max_qui_sup = max(razao_prop_sup,na.rm = T),
+                              max_qui_25_75 = max(razao_prop_25_75,na.rm = T)),
+                            .(compet)] -> equidade_chisq_cruzados_ing
+
+
+## contingência
+equidade_chisq_cruzados_ing[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
+                                  coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
+                                  coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75))]
+
+
+
+
+#### >  equidades, proporções e chi-quadrados marginais -----
+
+## percentuais marginais nas variáveis de interesse e outras
+ingressos_equidade_marginais <- agrega_junta_censo(ingressos_equidade_tab,
+                                                   pessoas_censo,
+                                                   vars.v = c("no_cor_origem_etnica",
+                                                              "no_cor_origem_etnica_ag",
+                                                              "sexo",
+                                                              "cor_sexo",
+                                                              "cor_sexo_ag",
+                                                              "idade_servidor",
+                                                              "pcd",
+                                                              "no_regiao_naturalidade"),
+                                                   cruzados = F)
+
+## razões de equidade cruzadas
+ingressos_equidade_marginais[,`:=`(equidade_marginais = p_siape/p_censo,
+                                   equidade_marginais_sup = p_siape/p_censo_sup,
+                                   equidade_marginais_25_75 = p_siape_25_75/p_censo_25_75)]
+
+## total observado no SIAPE no mês
+ingressos_equidade_marginais[,`:=`(geral_siape = sum(n_siape),
+                                   geal_siape_25_75 = sum(n_siape_25_75)),
+                             .(compet,variavel)]
+
+## maior razão de probabilidade possível
+ingressos_equidade_marginais[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
+                                   razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
+                                   razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
+                                                             (1-p_censo_25_75)/p_censo_25_75,
+                                                             NA))]
+
+
+
+## medidas qui-quadrado cruzadas, mês a mês
+ingressos_equidade_marginais[!(any_vazio),# & compet > 201912,
+                             .(n_categ = .N,
+                               qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
+                               qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                               qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
+                               max_qui = max(razao_prop,na.rm = T),
+                               max_qui_sup = max(razao_prop_sup,na.rm = T),
+                               max_qui_25_75 = max(razao_prop_25_75,na.rm = T)),
+                             .(variavel,compet)] -> equidade_chisq_marginais_ing
+
+
+## contingência
+equidade_chisq_marginais_ing[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
+                                   coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
+                                   coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75))]
+
+
+
+
+### > salvando bases -------
+saveRDS(ingressos_equidade_tab,'data-raw/data_pfgp/ingressos_equidade_tab.rds')
+
+# salvando coeficientes
+save(ingressos_equidade_cruzados,
+     ingressos_equidade_marginais,
+     equidade_chisq_cruzados_ing,
+     equidade_chisq_marginais_ing,
+     file = 'data-raw/data_pfgp/ingressos_equidade_marginais.rda')
+
 
 
 
