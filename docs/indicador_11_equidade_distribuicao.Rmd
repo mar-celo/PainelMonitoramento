@@ -1,5 +1,5 @@
 ---
-title: "Indicador 11: Equidade na composição demográfica dos servidores estatutários"
+title: "Indicador 11: Equidade na composição demográfica dos servidores estatutários ativos"
 author: "MGI - SGP/DIGID/CGINF"
 date: "`r format(Sys.Date(),'%d de %B de %Y')`"
 output:
