@@ -24,6 +24,7 @@ library(ggplot2)
 library(stringr)
 library(patchwork)
 library(htmltools)
+library(htmlwidgets)
 library(crosstalk)
 library(bslib)
 source("../R/utils_pfgp.R")
@@ -784,6 +785,11 @@ equidade_chisq_marginais_ing %>%
        y = "Coeficiente de contingência"
        ) -> p2
 
+
+
+
+
+
 p2_pl <- ggplotly_c(p2) %>% plotly::style(textposition = "top center")
 ```
 
@@ -868,4 +874,89 @@ bscols(
 )
 ```
 
+```{r agregacoes_alternativas}
+ingressos_equidade_cruzados[,termo_chisq := ((p_siape - p_censo)^2)/p_censo]
+ingressos_equidade_cruzados[(!any_vazio & is.finite(equidade_cruzados)),
+                             .(variavel = 'Total',
+                               `Qui-quadrado` = sum(termo_chisq) ,
+                               `Qui-quadrado 'médio'` = mean(termo_chisq) %>% sqrt,
+                               `Média das diferenças absolutas` = mean(abs(p_siape - p_censo)),
+                               `Raiz da média das diferenças quadradas` = sqrt(mean((p_siape - p_censo)^2))),
+                             .(compet )]-> chisq_alt_cruzados
 
+
+ingressos_equidade_marginais[,termo_chisq := ((p_siape - p_censo)^2)/p_censo]
+ingressos_equidade_marginais[(!any_vazio & is.finite(equidade_marginais)),
+                             .(`Qui-quadrado` = sum(termo_chisq) ,
+                               `Qui-quadrado 'médio'` = mean(termo_chisq) %>% sqrt,
+                               `Média das diferenças absolutas` = mean(abs(p_siape - p_censo)),
+                               `Raiz da média das diferenças quadradas` = sqrt(mean((p_siape - p_censo)^2))),
+                             .(compet,variavel )] -> chisq_alt_marginais
+
+chisq_alt <- rbindlist(list(chisq_alt_marginais,chisq_alt_cruzados),fill = T)
+
+
+# medidas de interesse
+medidas_interesse <- setdiff(names(chisq_alt),c('compet','variavel'))
+
+
+# lista de fórmulas
+
+sapply(medidas_interesse,function(mdd){
+  chisq_alt[variavel %in% c("Total",vars_nos_cruzados),] %>% 
+    setnames(mdd,'mdd') %>% 
+    ggplot_cat(aes(x = compet,y = mdd,color = variavel)) +
+    geom_line(size = 1.3) +
+    geom_point(size = 2) +
+    labs(title = mdd,
+         subtitle = "Observações nas distribuições cruzadas X marginais",
+         col = NULL,
+         y = "Índice de equidade") -> p
+  return(p)
+  
+  }) -> agregs_alternativas
+
+
+# lista de fórmulas
+list_alt <- 
+  c("Qui-quadrado" = "$$\\chi^2 = \\sum_{i = 1}^{k}{\\frac{(p_{i} - \\pi_{i})^2}{\\pi_{i}}}$$",
+    "Qui-quadrado 'médio'" = "$$\\frac{\\chi^2}{k}$$",
+    "Média das diferenças absolutas" = "$$\\frac{\\sum_{i = 1}^{k}{\\lvert p_{i} - \\pi_{i}\\rvert}}{k}$$",
+    "Raiz da média das diferenças quadradas" = "$$\\sqrt{\\frac{\\sum_{i = 1}^{k}{(p_{i} - \\pi_{i})^2}}{k}}$$"
+  )
+
+```
+
+
+
+
+
+
+```{r agregacoes_alternativas_show, results='asis'}
+
+
+# 1. Criamos uma lista vazia para acumular o conteúdo na ordem correta
+conteudo_final <- tagList()
+
+for(nm in medidas_interesse){
+  
+  # 2. Criamos o texto usando HTML ou a função HTML() para interpretar Markdown
+  paste0(
+    "\n\n## ",nm, "\n\n",
+    "\n\n",list_alt[nm],"\n\n"
+    ) %>% cat()
+  
+  # 3. Criamos o gráfico plotly normalmente
+  p <- agregs_alternativas[[nm]] %>% ggplotly_c()%>% plotly::style(textposition = "top center")
+  
+  # texto de quebra
+  # texto_quebra <- HTML("\n\n\n\n")
+  
+  # 4. Combinamos o texto e o gráfico desta iteração dentro da nossa lista master
+  # conteudo_final <- tagList(conteudo_final, texto_html, p,texto_quebra)
+  print(tagList(p))
+}
+
+# 5. Fora do loop, imprimimos tudo na tela mantendo a ordem exata
+conteudo_final
+```
