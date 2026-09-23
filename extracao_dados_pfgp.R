@@ -503,6 +503,7 @@ calcula_chisq_aderencia <- function(p.v,pi.v){
     if(sum(p.v_n) > 1) p.v_n <- p.v_n/100
     if(sum(pi.v_n) > 1) pi.v_n <- pi.v_n/100
     chisq.n <- sum(((p.v_n - pi.v_n)^2)/pi.v_n)
+    return(chisq.n)
   }else{
     return(NA)
   }
@@ -601,9 +602,13 @@ ativos_equidade_marginais[!(any_vazio),# & compet > 201912,
 
 
 ## contingência
-equidade_chisq_marginais[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
-                               coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
-                               coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75))]
+equidade_chisq_marginais[,`:=`(#coef_contin = 100*sqrt(qui_quadrado/max_qui),
+                               #coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
+                               #coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75)
+  coef_contin = sqrt(qui_quadrado/n_categ),
+  coef_contin_sup = sqrt(qui_quadrado_sup/n_categ),
+  coef_contin_25_75 = sqrt(qui_quadrado_25_75/n_categ)
+  )]
 
 
 
@@ -865,9 +870,15 @@ ingressos_equidade_marginais[!(any_vazio),# & compet > 201912,
 
 
 ## contingência
-equidade_chisq_marginais_ing[,`:=`(coef_contin = 100*sqrt(qui_quadrado/max_qui),
-                                   coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
-                                   coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75))]
+equidade_chisq_marginais_ing[,`:=`(#coef_contin = 100*sqrt(qui_quadrado/max_qui),
+  #coef_contin_sup = 100*sqrt(qui_quadrado_sup/max_qui_sup),
+  #coef_contin_25_75 = 100*sqrt(qui_quadrado_25_75/max_qui_25_75)
+  coef_contin = sqrt(qui_quadrado/n_categ),
+  coef_contin_sup = sqrt(qui_quadrado_sup/n_categ),
+  coef_contin_25_75 = sqrt(qui_quadrado_25_75/n_categ)
+)]
+
+
 
 
 
