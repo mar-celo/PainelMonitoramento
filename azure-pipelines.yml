@@ -55,6 +55,8 @@ stages:
         tags: |
           $(Build.BuildId)
           latest
+        # ... mantenha os parâmetros existentes ...
+        arguments: '--no-cache'
 
 # ── Deploy Desenvolvimento (branch: develop) ──────────────────────────────────
 - stage: deploy_dev
