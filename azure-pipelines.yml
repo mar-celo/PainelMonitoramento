@@ -103,7 +103,8 @@ stages:
               valueFile: helm/values.yaml
               install: true
               waitForExecution: false
-              arguments: ""
+              overrideValues: "image.tag=$(Build.BuildId),image.pullPolicy=Always"
+              arguments: "--recreate-pods --force"
 
 # ── Deploy Homologação (branch: release/*) ────────────────────────────────────
 - stage: deploy_hom
