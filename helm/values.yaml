@@ -35,3 +35,6 @@ ingress:
 autoScalling:
   maxReplicas: ${MAX_REPLICAS}
   scallingByCpuPerc: ${SCALING_BY_CPU_PERC}
+
+# Force restart
+restartTrigger: "v1"
