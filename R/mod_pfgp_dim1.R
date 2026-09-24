@@ -154,15 +154,19 @@ mod_pfgp_dim1_server <- function(id) {
         TRUE ~ system.file("relatorios", "indicador_11_equidade_distribuicao.html", package = "PainelMonitoramento")
       )
 
-      # Pega a data/hora da última alteração do arquivo como versão
-      v_cache <- if (file.exists(caminho_arquivo)) file.mtime(caminho_arquivo) else Sys.time()
+      if (file.exists(caminho_arquivo) && nzchar(caminho_arquivo)) {
+        conteudo_html <- paste(readLines(caminho_arquivo, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
 
-      tags$iframe(
-        src = paste0("relatorios/indicador_11_equidade_distribuicao.html?v=",as.numeric(v_cache)),
-        width = "100%",
-        height = "1500px",
-        style = "border:none;"
-      )
+        # 3. Injeta o texto do HTML diretamente dentro do iframe usando srcdoc
+        tags$iframe(
+          srcdoc = conteudo_html,
+          width = "100%",
+          height = "1500px",
+          style = "border:none;"
+          )
+        } else {
+          tags$p("Relatório não encontrado no servidor.")
+          }
       })
 
     output$texto_razao_equidade_ingr <- shiny::renderUI({
