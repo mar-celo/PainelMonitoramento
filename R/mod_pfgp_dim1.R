@@ -148,25 +148,58 @@ mod_pfgp_dim1_server <- function(id) {
     })
 
     output$texto_razao_equidade_atv <- shiny::renderUI({
-      caminho_arquivo <- dplyr::case_when(
-        file.exists("inst/relatorios/indicador_11_equidade_distribuicao.html") ~ "inst/relatorios/indicador_11_equidade_distribuicao.html",
-        file.exists("relatorios/indicador_11_equidade_distribuicao.html") ~ "relatorios/indicador_11_equidade_distribuicao.html",
-        TRUE ~ system.file("relatorios", "indicador_11_equidade_distribuicao.html", package = "PainelMonitoramento")
+      # caminho_arquivo <- dplyr::case_when(
+      #   file.exists("inst/relatorios/indicador_11_equidade_distribuicao.html") ~ "inst/relatorios/indicador_11_equidade_distribuicao.html",
+      #   file.exists("relatorios/indicador_11_equidade_distribuicao.html") ~ "relatorios/indicador_11_equidade_distribuicao.html",
+      #   TRUE ~ system.file("relatorios", "indicador_11_equidade_distribuicao.html", package = "PainelMonitoramento")
+      # )
+      #
+      # if (file.exists(caminho_arquivo) && nzchar(caminho_arquivo)) {
+      #   conteudo_html <- paste(readLines(caminho_arquivo, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+      #
+      #   # 3. Injeta o texto do HTML diretamente dentro do iframe usando srcdoc
+      #   tags$iframe(
+      #     srcdoc = conteudo_html,
+      #     width = "100%",
+      #     height = "1500px",
+      #     style = "border:none;"
+      #     )
+      #   } else {
+      #     tags$p("Relatório não encontrado no servidor.")
+      #     }
+
+
+      # 1. Verifica quais diretórios existem no servidor
+      diretorios_testados <- c(
+        "inst/relatorios" = dir.exists("inst/relatorios"),
+        "relatorios" = dir.exists("relatorios"),
+        "pacote_instalado" = nzchar(system.file("relatorios", package = "PainelMonitoramento"))
       )
 
-      if (file.exists(caminho_arquivo) && nzchar(caminho_arquivo)) {
-        conteudo_html <- paste(readLines(caminho_arquivo, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+      # 2. Lista os arquivos encontrados na pasta do pacote instalado
+      caminho_pacote <- system.file("relatorios", package = "PainelMonitoramento")
+      arquivos_no_pacote <- if (nzchar(caminho_pacote)) list.files(caminho_pacote) else "Pasta não encontrada"
 
-        # 3. Injeta o texto do HTML diretamente dentro do iframe usando srcdoc
-        tags$iframe(
-          srcdoc = conteudo_html,
-          width = "100%",
-          height = "1500px",
-          style = "border:none;"
+      # 3. Lista os arquivos na pasta física local (se existir)
+      arquivos_no_local <- if (dir.exists("inst/relatorios")) list.files("inst/relatorios") else "Pasta inst/relatorios não existe"
+
+      # 4. Pega a data de modificação do arquivo antigo se ele existir
+      arq_pacote <- system.file("relatorios", "indicador_11_equidade_distribuicao.html", package = "PainelMonitoramento")
+      data_modificacao <- if (file.exists(arq_pacote)) as.character(file.mtime(arq_pacote)) else "Arquivo não existe"
+
+      # Retorna o diagnóstico na tela
+      shiny::tagList(
+        shiny::tags$h4("Diagnóstico de Arquivos no Servidor Azure:"),
+        shiny::tags$pre(
+          paste0(
+            "Diretório de trabalho (getwd()): ", getwd(), "\n\n",
+            "Checagem de Diretórios:\n", paste(names(diretorios_testados), diretorios_testados, sep = ": ", collapse = "\n"), "\n\n",
+            "Data do arquivo no pacote instalado: ", data_modificacao, "\n\n",
+            "Arquivos dentro do pacote instalado:\n", paste(arquivos_no_pacote, collapse = "\n"), "\n\n",
+            "Arquivos dentro de 'inst/relatorios':\n", paste(arquivos_no_local, collapse = "\n")
           )
-        } else {
-          tags$p("Relatório não encontrado no servidor.")
-          }
+        )
+      )
       })
 
     output$texto_razao_equidade_ingr <- shiny::renderUI({
