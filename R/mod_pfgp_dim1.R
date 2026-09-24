@@ -20,7 +20,8 @@ mod_pfgp_dim1_ui <- function(id) {
         class = "bg-primary text-white",
         tags$div(
           tags$span(shiny::icon("circle-info")),
-          tags$span("Equidade de distribuição de servidores: estatutários ativos X distribuição demográfica na população")
+          # tags$span("Equidade de distribuição de servidores: estatutários ativos X distribuição demográfica na população")
+          tags$span("Teste Deploy 24/09 17:28")
         )
       ),
       bslib::card_body(
