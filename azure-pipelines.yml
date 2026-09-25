@@ -104,9 +104,9 @@ stages:
               releaseName: $(PROJECT_NAME)
               valueFile: helm/values.yaml
               install: true
-              waitForExecution: false
+              waitForExecution: true
               overrideValues: "image.tag=$(Build.BuildId),image.pullPolicy=Always"
-              arguments: "--recreate-pods --force"
+              arguments: "--recreate-pods --force --wait --timeout 10m"
 
 # ── Deploy Homologação (branch: release/*) ────────────────────────────────────
 - stage: deploy_hom
@@ -154,8 +154,8 @@ stages:
               releaseName: $(PROJECT_NAME)
               valueFile: helm/values.yaml
               install: true
-              waitForExecution: false
-              arguments: ""
+              waitForExecution: true
+              arguments: "--wait --timeout 10m"
 
 # ── Deploy Produção (branch: master) ─────────────────────────────────────────
 - stage: deploy_prd
@@ -203,8 +203,8 @@ stages:
               releaseName: $(PROJECT_NAME)
               valueFile: helm/values.yaml
               install: true
-              waitForExecution: false
-              arguments: ""
+              waitForExecution: true
+              arguments: "--wait --timeout 10m"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GUIA DE VARIABLE GROUPS
