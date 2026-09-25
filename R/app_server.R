@@ -1,3 +1,14 @@
+# Cache de .rds por processo: cada arquivo é lido uma vez e compartilhado
+# entre todas as sessões (evita recarregar dados a cada visitante).
+.cache_rds <- new.env(parent = emptyenv())
+
+.ler_rds <- function(caminho) {
+  if (is.null(.cache_rds[[caminho]])) {
+    .cache_rds[[caminho]] <- readRDS(here::here(caminho))
+  }
+  .cache_rds[[caminho]]
+}
+
 #' The application server-side
 #'
 #' @param input,output,session Internal parameters for {shiny}.

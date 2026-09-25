@@ -74,7 +74,7 @@ mod_pfgp_dim4_server <- function(id,
                                  reac_desemp_org) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    df_liderancas <- readRDS(here::here("data-raw/data_pfgp/df_liderancas.rds"))
+    df_liderancas <- .ler_rds("data-raw/data_pfgp/df_liderancas.rds")
 
     output$serie_lidera_negros <- plotly::renderPlotly({
       grafico_compartilhado()

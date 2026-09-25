@@ -17,8 +17,8 @@ deployment:
   minReplicas: ${MIN_REPLICAS}
   requestsCpu: ${REQUESTS_CPU}
   requestsMem: ${REQUESTS_MEM}
-  readinessPath: /
-  livenessPath: /
+  readinessPath: /shared/shiny.min.js
+  livenessPath: /shared/shiny.min.js
   readinessInitialDelaySeconds: 120
   livenessInitialDelaySeconds: 180
   readinessPeriodSeconds: 15

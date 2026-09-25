@@ -209,12 +209,12 @@ mod_etnia_lideranca_server <- function(id) {
     # ------------------------------------------------------------------
     # Carregamento de dados
     # ------------------------------------------------------------------
-    Tab_serie    <- readRDS(here::here("data-raw/data_etnia/Tab_inds_1_e_2.rds"))
-    Tab_vinc     <- readRDS(here::here("data-raw/data_etnia/Tab.rds"))
-    Tab_sup      <- readRDS(here::here("data-raw/data_etnia/Tab_sup.rds"))
-    Tab_ind3     <- readRDS(here::here("data-raw/data_etnia/Tab_ind3.rds"))
-    Tab_eq_mes   <- readRDS(here::here("data-raw/data_etnia/Tab_inds_4_mes.rds"))
-    Tab_ind4_orgaos   <- readRDS(here::here("data-raw/data_etnia/Tab_inds_4_orgaos.rds"))
+    Tab_serie    <- .ler_rds("data-raw/data_etnia/Tab_inds_1_e_2.rds")
+    Tab_vinc     <- .ler_rds("data-raw/data_etnia/Tab.rds")
+    Tab_sup      <- .ler_rds("data-raw/data_etnia/Tab_sup.rds")
+    Tab_ind3     <- .ler_rds("data-raw/data_etnia/Tab_ind3.rds")
+    Tab_eq_mes   <- .ler_rds("data-raw/data_etnia/Tab_inds_4_mes.rds")
+    Tab_ind4_orgaos   <- .ler_rds("data-raw/data_etnia/Tab_inds_4_orgaos.rds")
 
     # Normalizar nomes de colunas (remove acentuação para evitar problemas de encoding)
     names(Tab_vinc) <- iconv(names(Tab_vinc), "UTF-8", "ASCII//TRANSLIT")

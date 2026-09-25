@@ -88,8 +88,8 @@ mod_pfgp_dim1_ui <- function(id) {
 mod_pfgp_dim1_server <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    base_censo     <- readRDS(here::here("data-raw/data_pfgp/base_censo.rds"))
-    base_ingressos <- readRDS(here::here("data-raw/data_pfgp/base_ingressos.rds"))
+    base_censo     <- .ler_rds("data-raw/data_pfgp/base_censo.rds")
+    base_ingressos <- .ler_rds("data-raw/data_pfgp/base_ingressos.rds")
 
     base_censo_melt <-
       base_censo |>

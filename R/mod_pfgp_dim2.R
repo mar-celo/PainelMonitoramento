@@ -68,9 +68,9 @@ mod_pfgp_dim2_server <- function(id,
                                  reac_criterios_promo) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    tab_cargo_transversal       <- readRDS(here::here("data-raw/data_pfgp/tab_cargo_transversal.rds"))
-    tab_ativo_transversal       <- readRDS(here::here("data-raw/data_pfgp/tab_ativo_transversal.rds"))
-    tab_raca_genero_transversal <- readRDS(here::here("data-raw/data_pfgp/tab_raca_genero_transversal.rds"))
+    tab_cargo_transversal       <- .ler_rds("data-raw/data_pfgp/tab_cargo_transversal.rds")
+    tab_ativo_transversal       <- .ler_rds("data-raw/data_pfgp/tab_ativo_transversal.rds")
+    tab_raca_genero_transversal <- .ler_rds("data-raw/data_pfgp/tab_raca_genero_transversal.rds")
 
     tab_raca_genero_transversal <- dplyr::filter(tab_raca_genero_transversal,
                                                  !no_cor_origem_etnica %in% c(NA),
