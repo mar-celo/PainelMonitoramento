@@ -114,9 +114,9 @@ equidade_chisq_cruzados_ing[,ano := compet]
 
 Equidade de distribuição dos servidores públicos, vis a vis distribuição demográfica na população, por:
 
-1. gênero; 
+1. sexo; 
 
-1. raça;
+1. cor/origem étnica;
 
 1. origem territorial; 
 

@@ -148,6 +148,8 @@ pessoas_censo[,`:=`(
                                          )
                                   ),
 
+  nivel_superior = ifelse(nivel_instrucao %in% c(7),'Sim',"Não"),
+
   # sexo
   sexo = labels$sexo[sexo],
 
@@ -216,7 +218,8 @@ agreg_min <- c(# "CO_ORGAO",
                'NO_COR_ORIGEM_ETNICA',
                'CO_SEXO',
                'NO_REGIAO_NATURALIDADE',
-               'IDADE_SERVIDOR') %>%
+               'IDADE_SERVIDOR',
+               'nivel_superior') %>%
   tolower()
 
 
@@ -275,7 +278,7 @@ ativos_equidade_list <-
              df_tabelao  %>%
              filter(var_0001_situacao %in% 'ATIVO',
                     sg_regime_juridico %in% 'EST',
-                    var_0048_qtd_serv_p %in% 1
+                    var_0048_qtd_serv_p %in% c('1',1)
                     ) %>%
              # filter(!co_natureza_juridica %in% c(10,5,6),
              #        #!no_natureza_juridica %in% c("SERVICO PUBLICO ESTADUAL","EMPRESA PUBLICA","SOCIEDADE ECONOMIA  MISTA"),
@@ -294,6 +297,10 @@ ativos_equidade_list <-
                                          include.lowest = T,
                                          right = F
                                          ),
+
+                    nivel_superior = ifelse(sg_escolaridade_cargo %in% "NS",
+                                            "Sim",
+                                            "Não"),
 
                     geracao = cut(ano_nasc,
                                   breaks = breaks_geracao,
@@ -395,18 +402,19 @@ agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
   if(cruzados){
     # agregando siape
     dt_siape_ag <- dt_siape[,.(n_siape = sum(n,na.rm = T),
-                               n_siape_25_75 = sum(n*is_25_75,na.rm = T)),
+                               n_siape_25_75 = sum(n*is_25_75,na.rm = T),
+                               n_siape_sup = sum(n*(nivel_superior %in% "Sim"),na.rm = T)),
                             by = c('compet',vars.v)] %>%
       # percentuais no SIAPE
       .[,`:=`(p_siape = n_siape/sum(n_siape),
-              p_siape_25_75 = n_siape_25_75/sum(n_siape_25_75)),.(compet)]
+              p_siape_25_75 = n_siape_25_75/sum(n_siape_25_75),
+              p_siape_sup = n_siape_sup/sum(n_siape_sup)),.(compet)]
 
     # agregando censo
     dt_censo_ag <- dt_censo[,.(n_censo = sum(populacao_estimada,na.rm = T),
-                               n_censo_sup = sum(populacao_estimada*(nivel_instrucao %in% 7),
-                                                 na.rm = T),
                                n_censo_25_75 = sum(populacao_estimada*(fx_li >= 25 & fx_ls < 75),
-                                                   na.rm = T)
+                                                   na.rm = T),
+                               n_censo_sup = sum(populacao_estimada*(nivel_superior %in% "Sim"),na.rm = T)
                                ),
                             by = c(vars.v)] %>%
       # percentuais no Censo
@@ -439,16 +447,18 @@ agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
     # agregando siape
     dt_siape_ag <-
       melt(dt_siape,
-           id.vars = c('compet','is_25_75','n'),
+           id.vars = c('compet','is_25_75','nivel_superior','n'),
            measure.vars = vars.v,
            variable.name = 'variavel',
            value.name = 'categoria') %>%
       .[,.(n_siape = sum(n,na.rm = T),
-           n_siape_25_75 = sum(n*is_25_75,na.rm = T)),
+           n_siape_25_75 = sum(n*is_25_75,na.rm = T),
+           n_siape_sup = sum(n*(nivel_superior %in% "Sim"),na.rm = T)),
         by = c('compet','variavel','categoria')] %>%
       # percentuais no SIAPE
       .[,`:=`(p_siape = n_siape/sum(n_siape),
-              p_siape_25_75 = n_siape_25_75/sum(n_siape_25_75)),
+              p_siape_25_75 = n_siape_25_75/sum(n_siape_25_75),
+              p_siape_sup = n_siape_sup/sum(n_siape_sup)),
         .(compet,variavel)]
 
     # agregando censo
@@ -456,8 +466,8 @@ agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
       dt_censo %>%
       copy %>%
       .[,`:=`(compet = 2022,
-              populacao_sup = populacao_estimada*(nivel_instrucao %in% 7),
-              populacao_25_75 = populacao_estimada*(fx_li >= 25 & fx_ls < 75))] %>%
+              populacao_25_75 = populacao_estimada*(fx_li >= 25 & fx_ls < 75),
+              populacao_sup = populacao_estimada*(nivel_superior %in% "Sim"))] %>%
       melt(id.vars = c('compet','populacao_estimada','populacao_sup','populacao_25_75'),
            measure.vars = vars.v,
            variable.name = 'variavel',
@@ -505,7 +515,7 @@ calcula_chisq_aderencia <- function(p.v,pi.v){
     chisq.n <- sum(((p.v_n - pi.v_n)^2)/pi.v_n)
     return(chisq.n)
   }else{
-    return(NA)
+    return(numeric(0))
   }
 }
 
@@ -518,17 +528,23 @@ ativos_equidade_cruzados <- agrega_junta_censo(ativos_equidade_tab,
                                                           "no_regiao_naturalidade"))
 ## razões de equidade nos grupos cruzados, mês a mes
 ativos_equidade_cruzados[,`:=`(equidade_cruzados = p_siape/p_censo,
-                               equidade_cruzados_sup = p_siape/p_censo_sup,
+                               equidade_cruzados_sup = p_siape_sup/p_censo_sup,
                                equidade_cruzados_25_75 = p_siape_25_75/p_censo_25_75)]
 
 
 ## total observado no SIAPE no mês
 ativos_equidade_cruzados[,`:=`(geral_siape = sum(n_siape),
-                               geal_siape_25_75 = sum(n_siape_25_75)),.(compet)]
+                               geal_siape_25_75 = sum(n_siape_25_75),
+                               geral_siape_sup = sum(n_siape_sup)),
+                         .(compet)]
 
 ## maior razão de probabilidade possível
-ativos_equidade_cruzados[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
-                               razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
+ativos_equidade_cruzados[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,
+                                                       (1-p_censo)/p_censo,
+                                                       NA),
+                               razao_prop_sup = ifelse(n_censo_sup > geral_siape_sup,
+                                                       (1 - p_censo_sup)/p_censo_sup,
+                                                       NA),
                                razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
                                                          (1-p_censo_25_75)/p_censo_25_75,
                                                          NA))]
@@ -539,7 +555,7 @@ ativos_equidade_cruzados[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-
 ativos_equidade_cruzados[!(any_vazio),# & compet > 201912,
                          .(n_categ = .N,
                            qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
-                           qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                           qui_quadrado_sup = calcula_chisq_aderencia(p_siape_sup,p_censo_sup),
                            qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
                            max_qui = max(razao_prop,na.rm = T),
                            max_qui_sup = max(razao_prop_sup,na.rm = T),
@@ -572,17 +588,22 @@ ativos_equidade_marginais <- agrega_junta_censo(ativos_equidade_tab,
 
 ## razões de equidade cruzadas
 ativos_equidade_marginais[,`:=`(equidade_marginais = p_siape/p_censo,
-                                equidade_marginais_sup = p_siape/p_censo_sup,
+                                equidade_marginais_sup = p_siape_sup/p_censo_sup,
                                 equidade_marginais_25_75 = p_siape_25_75/p_censo_25_75)]
 
 ## total observado no SIAPE no mês
 ativos_equidade_marginais[,`:=`(geral_siape = sum(n_siape),
+                                geral_siape_sup = sum(n_siape_sup),
                                 geal_siape_25_75 = sum(n_siape_25_75)),
                           .(compet,variavel)]
 
 ## maior razão de probabilidade possível
-ativos_equidade_marginais[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
-                                razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
+ativos_equidade_marginais[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,
+                                                        (1-p_censo)/p_censo,
+                                                        NA),
+                                razao_prop_sup = ifelse(n_censo_sup > geral_siape_sup,
+                                                        (1 - p_censo_sup)/p_censo_sup
+                                                        ,NA),
                                 razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
                                                           (1-p_censo_25_75)/p_censo_25_75,
                                                          NA))]
@@ -593,7 +614,7 @@ ativos_equidade_marginais[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1
 ativos_equidade_marginais[!(any_vazio),# & compet > 201912,
                           .(n_categ = .N,
                             qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
-                            qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                            qui_quadrado_sup = calcula_chisq_aderencia(p_siape_sup,p_censo_sup),
                             qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
                             max_qui = max(razao_prop,na.rm = T),
                             max_qui_sup = max(razao_prop_sup,na.rm = T),
@@ -696,6 +717,10 @@ ingressos_equidade_tab <-
                          include.lowest = T,
                          right = F),
 
+    nivel_superior = ifelse(sg_escolaridade_cargo %in% "NS",
+                            "Sim",
+                            "Não"),
+
     # geração (ano de nascimento)
     geracao = cut(ano_nasc,
                   breaks = breaks_geracao,
@@ -786,18 +811,19 @@ ingressos_equidade_cruzados <- agrega_junta_censo(ingressos_equidade_tab,
 
 ## razões de equidade nos grupos cruzados, mês a mes
 ingressos_equidade_cruzados[,`:=`(equidade_cruzados = p_siape/p_censo,
-                                  equidade_cruzados_sup = p_siape/p_censo_sup,
+                                  equidade_cruzados_sup = p_siape_sup/p_censo_sup,
                                   equidade_cruzados_25_75 = p_siape_25_75/p_censo_25_75)]
 
 
 ## total observado no SIAPE no mês
 ingressos_equidade_cruzados[,`:=`(geral_siape = sum(n_siape),
-                                  geal_siape_25_75 = sum(n_siape_25_75)),.(compet)]
+                                  geral_siape_sup = sum(n_siape_sup),
+                                  geral_siape_25_75 = sum(n_siape_25_75)),.(compet)]
 
 ## maior razão de probabilidade possível
 ingressos_equidade_cruzados[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
-                                  razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
-                                  razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
+                                  razao_prop_sup = ifelse(n_censo_sup > geral_siape_sup,(1 - p_censo_sup)/p_censo_sup,NA),
+                                  razao_prop_25_75 = ifelse(n_censo_25_75 > geral_siape_25_75,
                                                             (1-p_censo_25_75)/p_censo_25_75,
                                                             NA))]
 
@@ -807,7 +833,7 @@ ingressos_equidade_cruzados[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,
 ingressos_equidade_cruzados[!(any_vazio),# & compet > 201912,
                             .(n_categ = .N,
                               qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
-                              qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                              qui_quadrado_sup = calcula_chisq_aderencia(p_siape_sup,p_censo_sup),
                               qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
                               max_qui = max(razao_prop,na.rm = T),
                               max_qui_sup = max(razao_prop_sup,na.rm = T),
@@ -840,18 +866,19 @@ ingressos_equidade_marginais <- agrega_junta_censo(ingressos_equidade_tab,
 
 ## razões de equidade cruzadas
 ingressos_equidade_marginais[,`:=`(equidade_marginais = p_siape/p_censo,
-                                   equidade_marginais_sup = p_siape/p_censo_sup,
+                                   equidade_marginais_sup = p_siape_sup/p_censo_sup,
                                    equidade_marginais_25_75 = p_siape_25_75/p_censo_25_75)]
 
 ## total observado no SIAPE no mês
 ingressos_equidade_marginais[,`:=`(geral_siape = sum(n_siape),
-                                   geal_siape_25_75 = sum(n_siape_25_75)),
+                                   geral_siape_sup = sum(n_siape_sup),
+                                   geral_siape_25_75 = sum(n_siape_25_75)),
                              .(compet,variavel)]
 
 ## maior razão de probabilidade possível
 ingressos_equidade_marginais[,`:=`(razao_prop     = ifelse(n_censo > geral_siape,(1-p_censo)/p_censo,NA),
-                                   razao_prop_sup = ifelse(n_censo_sup > geral_siape,(1 - p_censo_sup)/p_censo_sup,NA),
-                                   razao_prop_25_75 = ifelse(n_censo_25_75 > geal_siape_25_75,
+                                   razao_prop_sup = ifelse(n_censo_sup > geral_siape_sup,(1 - p_censo_sup)/p_censo_sup,NA),
+                                   razao_prop_25_75 = ifelse(n_censo_25_75 > geral_siape_25_75,
                                                              (1-p_censo_25_75)/p_censo_25_75,
                                                              NA))]
 
@@ -861,7 +888,7 @@ ingressos_equidade_marginais[,`:=`(razao_prop     = ifelse(n_censo > geral_siape
 ingressos_equidade_marginais[!(any_vazio),# & compet > 201912,
                              .(n_categ = .N,
                                qui_quadrado = calcula_chisq_aderencia(p_siape,p_censo),
-                               qui_quadrado_sup = calcula_chisq_aderencia(p_siape,p_censo_sup),
+                               qui_quadrado_sup = calcula_chisq_aderencia(p_siape_sup,p_censo_sup),
                                qui_quadrado_25_75 = calcula_chisq_aderencia(p_siape_25_75,p_censo_25_75),
                                max_qui = max(razao_prop,na.rm = T),
                                max_qui_sup = max(razao_prop_sup,na.rm = T),
