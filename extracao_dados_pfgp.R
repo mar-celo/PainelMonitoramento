@@ -403,7 +403,7 @@ agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
     # agregando siape
     dt_siape_ag <- dt_siape[,.(n_siape = sum(n,na.rm = T),
                                n_siape_25_75 = sum(n*is_25_75,na.rm = T),
-                               n_siape_sup = sum(n*(nivel_superior %in% "Sim"),na.rm = T)),
+                               n_siape_sup = sum(n*(nivel_superior %in% "Sim")*is_25_75,na.rm = T)),
                             by = c('compet',vars.v)] %>%
       # percentuais no SIAPE
       .[,`:=`(p_siape = n_siape/sum(n_siape),
@@ -414,7 +414,8 @@ agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
     dt_censo_ag <- dt_censo[,.(n_censo = sum(populacao_estimada,na.rm = T),
                                n_censo_25_75 = sum(populacao_estimada*(fx_li >= 25 & fx_ls < 75),
                                                    na.rm = T),
-                               n_censo_sup = sum(populacao_estimada*(nivel_superior %in% "Sim"),na.rm = T)
+                               n_censo_sup = sum(populacao_estimada*(nivel_superior %in% "Sim")*(fx_li >= 25 & fx_ls < 75),
+                                                 na.rm = T)
                                ),
                             by = c(vars.v)] %>%
       # percentuais no Censo
@@ -453,7 +454,7 @@ agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
            value.name = 'categoria') %>%
       .[,.(n_siape = sum(n,na.rm = T),
            n_siape_25_75 = sum(n*is_25_75,na.rm = T),
-           n_siape_sup = sum(n*(nivel_superior %in% "Sim"),na.rm = T)),
+           n_siape_sup = sum(n*(nivel_superior %in% "Sim")*is_25_75,na.rm = T)),
         by = c('compet','variavel','categoria')] %>%
       # percentuais no SIAPE
       .[,`:=`(p_siape = n_siape/sum(n_siape),
@@ -467,7 +468,7 @@ agrega_junta_censo <- function(dt_siape,dt_censo,vars.v,cruzados = T){
       copy %>%
       .[,`:=`(compet = 2022,
               populacao_25_75 = populacao_estimada*(fx_li >= 25 & fx_ls < 75),
-              populacao_sup = populacao_estimada*(nivel_superior %in% "Sim"))] %>%
+              populacao_sup = populacao_estimada*(nivel_superior %in% "Sim")*(fx_li >= 25 & fx_ls < 75))] %>%
       melt(id.vars = c('compet','populacao_estimada','populacao_sup','populacao_25_75'),
            measure.vars = vars.v,
            variable.name = 'variavel',
