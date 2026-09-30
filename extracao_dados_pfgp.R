@@ -193,6 +193,9 @@ pessoas_censo[,`:=`(
 
   )]
 
+
+pessoas_censo[,idade_servidor := idade_servidor %>% gsub("^\\[(60|75).*","[60,120]",.)]
+
 ## novas variáveis de interesse
 pessoas_censo[,`:=`(
   cor_sexo    =    paste0("Cor/origem\nétnica ",str_to_title(no_cor_origem_etnica),", ",sexo),
@@ -393,7 +396,7 @@ ativos_equidade_tab[,c(categorias_interesse) :=
 
 # faixa de 25 a 75 anos no SIAPE
 ativos_equidade_tab[,is_25_75 := idade_servidor >= "[25,30)" & idade_servidor < "[75,120)"]
-
+ativos_equidade_tab[,idade_servidor := idade_servidor %>% gsub("^\\[(60|75).*","[60,120]",.)]
 
 #### >  equidades, proporções e chi-quadrados cruzados -----
 
@@ -795,6 +798,7 @@ ingressos_equidade_tab[,c(categorias_interesse) :=
 
 # faixa de 25 a 75 anos no SIAPE
 ingressos_equidade_tab[,is_25_75 := idade_servidor >= "[25,30)" & idade_servidor < "[75,120)"]
+ingressos_equidade_tab[,idade_servidor := idade_servidor %>% gsub("^\\[(60|75).*","[60,120]",.)]
 
 
 #### >  equidades, proporções e chi-quadrados cruzados -----
