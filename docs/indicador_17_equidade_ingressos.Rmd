@@ -1,5 +1,5 @@
 ---
-title: "Indicador 17: Equidade na composição demográfica dos servidores estatutários ingressantes"
+title: "Indicadores de equidade na composição demográfica dos servidores estatutários ingressantes"
 author: "MGI - SGP/DIGID/CGINF"
 date: "`r format(Sys.Date(),'%d de %B de %Y')`"
 output:
@@ -76,7 +76,7 @@ ingressos_equidade_marginais[variavel == "idade_servidor",
                           categoria := 
                             gsub("\\[|\\)","",categoria) %>% 
                             gsub("\\,"," a ",.) %>% 
-                            gsub("^75.*","75 ou mais",.) %>% 
+                            gsub("^60.*","60 ou mais",.) %>% 
                             str_trim  ]
 
 
@@ -110,22 +110,24 @@ equidade_chisq_cruzados_ing[,ano := compet]
 ```
 
 
-# Descrição do indicador
+# Indicadores de equidade na composição demográfica
 
-Equidade de distribuição dos servidores públicos, vis a vis distribuição demográfica na população, por:
+Medir a equidade de distribuição consiste em comparar a distribuição de servidores estatutários, observada no SIAPE, e a composição demográfica da população, com base no Censo de 2022. Um indicador é definido por alguma categorização que se tem em foco, que pode ser:
 
-1. sexo; 
-
-1. cor/origem étnica;
+1. sexo X cor/origem étnica;
 
 1. origem territorial; 
 
 1. faixa etária
 
+Assim, define-se um indicador mede a equidade de distribuição por origem territorial, outro que mede a equidade segundo as interseccionalidades de cor/origem étnica e sexo, e um terceiro que mede a equidade por faixa etária. 
+
+Além dos indicadores de equidade de servidores estatuários ingressantes, foram calculados indicadores similares para servidores estatutários ativos, [que pode ser acessado nesse link](https://painelmonitoramento-dev.dth.api.gov.br/relatorios/indicador_11_equidade_distribuicao.html).
+
 
 # Opção 1: índice de equidade por categoria
 
-* Hipótese analítica: na ausência de desigualdade de ingresso como estatutário na APF, a proporção de servidores ingressantes em uma determinada categoria deveria ser equivalente à sua proporção na população.
+* Hipótese analítica: na ausência de desigualdade de ingresso como estatutário na APF, a proporção de servidores ativos em uma determinada categoria deveria ser equivalente à sua proporção na população.
 
 * Definição: Razão entre o percentual de uma categoria dentre os ingressantes na APF e o percentual observado na população.
 
@@ -133,52 +135,45 @@ Equidade de distribuição dos servidores públicos, vis a vis distribuição de
 
 * Fórmula conceitual: 
 
-$$I_{eq} = \frac{\text{% de servidores estatutários ingressantes em uma categoria}}{\text{% desta categoria na população}}$$
+$$I_{j} = \frac{\text{% de servidores estatutários pertencentes à categoria j}}{\text{% da categoria j na população}}$$
 
 Interpretação:
 
-* $I_{eq} = 1$ → Representação equitativa da categoria
+* $I_{j} = 1$ → Representação equitativa da categoria em análise
 
-* $I_{eq} < 1$ → Sub-representação da categoria na APF
+* $I_{j} < 1$ → Sub-representação da categoria na APF
 
-* $I_{eq} > 1$ → Sobrerrepresentação
+* $I_{j} > 1$ → Sobrerrepresentação
 
 
-# Opção 2: Coeficiente de contingência ajustado
+# Opção 2: índice de equidade agregado
 
-A proposta do indicador envolve a comparação entre a proporção obervada no SIAPE para cada categoria $i$, denotada por $p_i$, e a observada no Censo, $\pi_i$, medindo grau de "aderência" da APF ao que se observa na população como um todo. O coeficiente de contingência ajustado pode ser aplicado para este tipo de situação.
+A proposta do indicador envolve a comparação entre a proporção obervada no SIAPE para cada categoria e a observada no Censo, medindo grau de "aderência" da APF ao que se observa na população como um todo. Baseado na medida Qui-quadrado de aderência entre distribuições, usualmente aplicado para este tipo de situação, o índice de equidade agregado é calculado da seguinte forma
 
-Representado por $C_a$, o coeficiente é determinado da seguinte forma
+$$I_a = 100\times\sqrt{\frac{\chi^2}{k}}$$
 
-$$C_a = 100\times\sqrt{\frac{\chi^2}{\chi^2_{max}}}$$
 
-O termo $\chi^2$ depende da diferença entre o que se observa em cada "célula" (exemplo, pessoas pretas na APF) e o que se esperaria observar caso a o percentual observado fosse igual ao que se observa nos dados do Censo. Mais precisamente, considerando que $k$ representa o número de categorias:
+O termo $k$ representa o número de categorias. Já o termo $\chi^2$ depende das diferenças entre as proporções de cada grupo $i$ observadas no SIAPE, denotadas por $p_i$, e as proporçções desses mesmos grupos observadas no Censo, denotadas por $\pi_i$. Mais precisamente:
 
 $$\chi^2 = \sum_{i = 1}^{k}{\frac{(p_{i} - \pi_{i})^2}{\pi_{i}}}$$
-Já o termo $\chi^2_{max}$ representa o valor máximo possível da medida $\chi^2$, que ocorre em uma situação hipotética em que 100% dos servidores ingressantes pertencem à categoria menos representativa na população brasileira como um todo. Para contornar o fato de que, dado o total observado em uma categoria, na população, nao ser o suficiente para preencher 100% dos servidores ingressantes no SIAPE (o que ocorre, por exemplo, para a populaçao indígena), o máximo hipotético desconsidera tais grupos.
 
-Interpretação:
+A divisão pelo número de categorias é uma forma de manter o índice comparável para diferentes categorizações. Os termos da medida qui-quadrado dependem de proporções que variam de 0 a 1. No entanto, uma categorização por sexo-cor/origem étnica, com 10 categorias, naturalmente terá mais termos a serem somados em comparação à categorização por região de origem, por exemplo, que possui 5 categorias.
 
-* $C_a= 0$ → Representação equitativa na categoria da variável em análise
 
-* $C_a> 0$ → Há categorias sub-representadas e outras sobrerrepresentadas. O grau de de distanciamento da situação de equidade é maior quanto mais o índice se aproxima de 100.
-
-* $C_a= 100$ → Sobrerrepresentação máxima para uma ou mais categorias.
+Interpretação: Quanto maior a similaridade entre as distribuições do SIAPE e do Censo, mais o indicador se aproxima de 0, que representa a equidade perfeita. À medida em que um ou mais grupos fica sobrerrepresentado ou sub-representado, o valor indicador aumenta, se afastando da equidade perfeita.
 
 
 
-Opções de cálculo
+* $I_a = 0$ → Representação perfeitamente equitativa na categoria da variável em análise
 
-1. Comparando as proporções das categorias cruzadas das variáveis de interesse (exemplo, Mulheres pretas da geração X, naturais do nordeste)
+* $I_a > 0$ → Há categorias sub-representadas e outras sobrerrepresentadas. O grau de de distanciamento da situação de equidade é maior quanto mais o índice se aproxima de 100.
 
-1. Comparando as proporções marginais de cada variável, de forma separada.
+
 
 # Resultados
 
-Considerou-se dois recortes possíveis para avaliar a equidade de composição demográfica. Primeiro, as características demográficas do SIAPE e do Censo 2022 são comparados em sua totalidade, sem filtros prévios. A segunda visão define um recorte de pessoas entre 25 e 75 anos nos dois grupos
+Considerou-se três recortes possíveis para avaliar a equidade de composição demográfica. Primeiro, as características demográficas do SIAPE e do Censo 2022 são comparados em sua totalidade, sem filtros prévios. A segunda visão define um recorte de pessoas entre 25 e 75 anos nos dois grupos. Por último, os indicadores de equidade são calculados para pessoas do mesmo recorte anterior, porém com nível superior, no caso do Censo, ou ocupando cargos de nível superior, no caso do SIAPE
 
-
-## Sem recorte: distribuições, razões de equidade e coeficientes de contingência
 
 
 ```{r dist_censo_siape}
@@ -190,8 +185,9 @@ anos.v <- unique(ingressos_equidade_marginais$compet) #%>% seq(.[1])
 ## função para comparação entre categorias
 compara_categ <- function(var_graph,
                           prop_siape = 'p_siape',
-                          prop_censo = "p_censo") {
-  stopifnot(prop_siape %in% c("p_siape","p_siape_25_75"))
+                          prop_censo = "p_censo",
+                          juntar_65 = F) {
+  stopifnot(prop_siape %in% c("p_siape","p_siape_25_75","p_siape_sup"))
   stopifnot(prop_censo %in% c("p_censo","p_censo_sup","p_censo_25_75"))
   
   pd_g <- position_dodge(width = 0.75)
@@ -212,6 +208,20 @@ compara_categ <- function(var_graph,
   
   # filtro das contingências na variável de interesse
   # dt_var_contin <- equidade_chisq_marginais_ing[variavel == var_graph,]
+  
+  # se faixa etária, aglutina 60 a 75 e 75 ou mais
+  if(var_graph %in% "idade_servidor" & juntar_65){
+    dt_var[,categoria := ifelse(grepl("^(60|75)",as.character(categoria)),
+                                '60 ou mais',
+                                categoria)] %>% 
+      .[,.(prop_siape = sum(prop_siape),
+           prop_censo = sum(prop_censo)),
+        .(compet,categoria)] -> dt_var
+    
+    levels_65 <- levels_categoria[[var_graph]] %>% gsub("^(60|75).*","60 ou mais",.) %>% unique
+  }else{
+    levels_65 <- levels_categoria[[var_graph]]
+  }
 
   # separando sexo, caso tenha
   if(var_graph %in% c('cor_sexo','cor_sexo_ag')){
@@ -234,7 +244,7 @@ compara_categ <- function(var_graph,
     ## categorias maiores primeiro
     setorder(-prop_siape) %>% 
     .[,categoria.f := factor(as.character(categoria),
-                             levels = levels_categoria[[var_graph]],ordered = T)]  %>% 
+                             levels = levels_65,ordered = T)]  %>% 
     
     ## melt para facilitar a posição (censo e siape são colunas)
     melt(id.vars = c("ano","categoria.f","subcateg"),
@@ -317,6 +327,13 @@ grafs_categ_25_75 <- sapply(vars_all,
                             prop_censo = 'p_censo_25_75',
                             simplify = F)
 
+grafs_categ_sup <- sapply(vars_all,
+                            compara_categ,
+                            prop_siape = 'p_siape_sup',
+                            prop_censo = 'p_censo_sup',
+                            simplify = F)
+
+
 
 ```
 
@@ -335,15 +352,22 @@ range_eq <- ingressos_equidade_marginais[!(any_vazio),
 range_eq_25_75 <- ingressos_equidade_marginais[!(any_vazio),
                                       range(equidade_marginais_25_75,na.rm = T)]
 
-rg_eq <- range(range_eq,range_eq_25_75)
+
+range_eq_sup <- ingressos_equidade_marginais[!(any_vazio),
+                                          range(equidade_marginais_sup,na.rm = T)]
+
+
+rg_eq <- range(range_eq,range_eq_25_75,range_eq_sup)
+
+
 
 
 ### Ranges de coeficientes de contingência
-range_conting <- range(equidade_chisq_marginais_ing$coef_contin,
-                       equidade_chisq_cruzados_ing$coef_contin)
+range_conting <- range(equidade_chisq_marginais_ing$coef_contin,na.rm = T)
 
-range_conting_25_75 <- range(equidade_chisq_marginais_ing$coef_contin_25_75,
-                             equidade_chisq_cruzados_ing$coef_contin_25_75)
+range_conting_25_75 <- range(equidade_chisq_marginais_ing$coef_contin_25_75,na.rm = T)
+
+range_conting_sup <- range(equidade_chisq_marginais_ing$coef_contin_sup,na.rm = T)
 
 rg_contg <- range(range_conting,range_conting_25_75)
 
@@ -385,7 +409,7 @@ compara_equidade <- function(var_graph,
     ggplot_cat(
       aes(x = ano)
       ) +
-    ylim(c(0,1.1*rg_eq[2])) +
+    # ylim(c(0,1.1*rg_eq[2])) +
     geom_line(
       aes(
         y = equidade,
@@ -432,6 +456,16 @@ grafs_equidade_25_75 <- sapply(vars_all,
 
 
 
+
+
+grafs_equidade_sup <- sapply(vars_all,
+                             compara_equidade,
+                             eq_var  = 'equidade_marginais_sup',
+                             simplify = F)
+
+
+
+
 compara_contingencia <-function(var_graph,
                                 eq_cont = 'coef_contin') {
   # stopifnot(prop_siape %in% c("p_siape","p_siape_25_75"))
@@ -467,14 +501,14 @@ compara_contingencia <-function(var_graph,
        linetype = "Coef.Contingência\n da variável"),
      size = 2
    ) +
-   geom_line(
-     data = dt_var_contin_cr,
-     aes(
-       x = ano,
-       y = eq_cont,
-       linetype = "Coef.Contingência\n geral"),
-     size = 1.3
-   ) +
+   # geom_line(
+   #   data = dt_var_contin_cr,
+   #   aes(
+   #     x = ano,
+   #     y = eq_cont,
+   #     linetype = "Coef.Contingência\n geral"),
+   #   size = 1.3
+   # ) +
    scale_linetype_manual(
      values = c("Coef.Contingência\n da variável" = 1,
                 "Coef.Contingência\n geral" = 3)
@@ -502,6 +536,13 @@ grafs_contingencia <-
          )
 
 
+grafs_contingencia_sup <-
+  sapply(vars_all,
+         compara_contingencia,
+         eq_cont = 'coef_contin_sup',
+         simplify = F
+         )
+
 grafs_contingencia_25_75 <-
   sapply(vars_all,
          compara_contingencia,
@@ -516,7 +557,11 @@ grafs_contingencia_25_75 <-
 ```
 
 
-```{r plot_sections,results = 'asis'}
+
+## Recorte de 25 a 75 anos: distribuições, razões de equidade e coeficientes de contingência
+
+
+```{r plot_sections_all,results = 'asis'}
 list_vars_plot <- c('faixa_etaria.f' = "Geração",
                     'no_regiao_naturalidade' = "Região de origem",
                     'cor_sexo' = "Sexo x cor/origem étnica (pretos e pardos)",
@@ -526,61 +571,6 @@ list_vars_plot <- c('faixa_etaria.f' = "Geração",
                     'sexo' = 'Sexo',
                     'idade_servidor' = "Faixa etária do servidor",
                     'pcd' = 'Servidor COM ou SEM deficiência')
-
-# Lista para guardar as abas
-abas <- list()
-
-i <- 0
-for(lst in vars_nos_cruzados){
-  i <- i + 1
-  # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
-  grafs_categ[[lst]] %>% ggplotly_c() %>% 
-    ggplotly_c()%>% 
-    plotly::layout(margin = list(t = 80))  -> g1
-  grafs_equidade[[lst]] %>% ggplotly_c() -> g2
-  grafs_contingencia[[lst]] %>% ggplotly_c() -> g3
-  
-  # 2. bscols() do crosstalk cria o layout grid nativo para widgets
-  layout_loop <- layout_columns(
-    col_widths = c(12,6, 6), # 12 = 100% largura; 6 e 6 = 50% cada
-    # row_heights = c(120.2, 1),  # Linha 1 fica ligeiramente mais alta que a linha 2
-    # g1,
-    g2,
-    g3
-  )
-  
-  # 3. Guardar como uma aba do Bootstrap
-  abas[[i]] <- nav_panel(
-    title = list_vars_plot[lst],
-    card(
-      
-      card_body(g1,
-                height = '400px',
-                full_screen = TRUE
-                ),
-        
-      layout_loop
-      )
-  )
-  
-  # # 3. Imprime o widget completo sem quebrar a renderização do R Markdown
-  # print(htmltools::tagList(
-  #   # htmltools::tags$h3(paste("Iteração", i)),
-  #   layout_loop
-  # ))
-  
-  cat('\n\n')
-}
-
-# 4. Renderizar o painel de abas completo de uma só vez
-do.call(navset_tab, abas)
-```
-
-
-## Recorte de 25 a 75 anos: distribuições, razões de equidade e coeficientes de contingência
-
-
-```{r plot_sections_all,results = 'asis'}
 
 # Lista para guardar as abas
 abas2 <- list()
@@ -632,22 +622,75 @@ for(lst in vars_nos_cruzados){
 do.call(navset_tab, abas2)
 ```
 
+## Recorte de 25 a 75 anos com nível superior : distribuições, razões de equidade e coeficientes de contingência
 
-# Visualizações alternativas
 
-Os gráficos abaixo apresentam outras comparações entre as características demográficas do SIAPE e as do Censo, considerando outros fatores não incluídos no indicador agregado. Tais fatores incluem, por exemplo, a distribuição  somente por cor/origem étnica, sem cruzamento com sexo e desagregando negros entre pretos e pardos. 
+```{r plot_sections_all_sup,results = 'asis'}
 
-Seguindo a mesma estrutura apresentada anteriormente, as comparações são feitas de dois modos, um comparando SIAPE e Censo em sua totalidade, outro comparando os dois grupos em um recorte de pessoas entre 25 e 75 anos.
+# Lista para guardar as abas
+abas2.1 <- list()
+
+i <- 0
+for(lst in vars_nos_cruzados){
+  i <- i + 1
+  # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
+  grafs_categ_sup[[lst]] %>% 
+    ggplotly_c()%>% 
+    plotly::layout(margin = list(t = 80)) -> g1 # <--- Força 80px de respiro no topo do gráfico todo
+  grafs_equidade_sup[[lst]] %>% ggplotly_c() -> g2
+  grafs_contingencia_sup[[lst]] %>% ggplotly_c() -> g3
+  
+  
+  # 2. bscols() do crosstalk cria o layout grid nativo para widgets
+  layout_loop <- layout_columns(
+    col_widths = c(12,6, 6), # 12 = 100% largura; 6 e 6 = 50% cada
+    # row_heights = c(120.2, 1),  # Linha 1 fica ligeiramente mais alta que a linha 2
+    # g1,
+    g2,
+    g3
+  )
+  
+  # 3. Guardar como uma aba do Bootstrap
+  abas2.1[[i]] <- nav_panel(
+    title = list_vars_plot[lst],
+    card(
+      
+      card_body(g1,
+                height = '500px',
+                full_screen = TRUE
+                ),
+        
+      layout_loop
+      )
+  )
+  
+  # # 3. Imprime o widget completo sem quebrar a renderização do R Markdown
+  # print(htmltools::tagList(
+  #   # htmltools::tags$h3(paste("Iteração", i)),
+  #   layout_loop
+  # ))
+  
+  cat('\n\n')
+}
+
+# 4. Renderizar o painel de abas completo de uma só vez
+do.call(navset_tab, abas2.1)
+```
+
+
+
 
 ## Sem recorte: distribuições, razões de equidade e coeficientes de contingência
 
-```{r abas_extras}
+
+
+```{r plot_sections,results = 'asis'}
 
 # Lista para guardar as abas
-abas_ext <- list()
+abas <- list()
 
 i <- 0
-for(lst in vars_fora_cruzados){
+for(lst in vars_nos_cruzados){
   i <- i + 1
   # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
   grafs_categ[[lst]] %>% ggplotly_c() %>% 
@@ -666,7 +709,7 @@ for(lst in vars_fora_cruzados){
   )
   
   # 3. Guardar como uma aba do Bootstrap
-  abas_ext[[i]] <- nav_panel(
+  abas[[i]] <- nav_panel(
     title = list_vars_plot[lst],
     card(
       
@@ -689,8 +732,15 @@ for(lst in vars_fora_cruzados){
 }
 
 # 4. Renderizar o painel de abas completo de uma só vez
-do.call(navset_tab, abas_ext)
+do.call(navset_tab, abas)
 ```
+
+
+# Visualizações alternativas
+
+Os gráficos abaixo apresentam outras comparações entre as características demográficas do SIAPE e as do Censo, considerando outros fatores não incluídos no indicador agregado. Tais fatores incluem, por exemplo, a distribuição  somente por cor/origem étnica, sem cruzamento com sexo e desagregando negros entre pretos e pardos. 
+
+Seguindo a mesma estrutura apresentada anteriormente, as comparações são feitas de dois modos, um comparando SIAPE e Censo em sua totalidade, outro comparando os dois grupos em um recorte de pessoas entre 25 e 75 anos.
 
 
 ## Recorte de 25 a 75 anos: distribuições, razões de equidade e coeficientes de contingência
@@ -745,218 +795,110 @@ for(lst in vars_fora_cruzados){
 do.call(navset_tab, abas_ext2)
 ```
 
+## Recorte de 25 a 75 anos com nível superior: distribuições, razões de equidade e coeficientes de contingência
 
-# Visões gerais: coeficientes de contingência X índices médios de equidade
+```{r abas_extras_sup}
+# Lista para guardar as abas
+abas_ext3 <- list()
 
-```{r equidades_medias}
-max_conting <- max(equidade_chisq_cruzados_ing$coef_contin,
-                   equidade_chisq_cruzados_ing$coef_contin_all,
-                   equidade_chisq_marginais_ing$coef_contin,
-                   equidade_chisq_marginais_ing$coef_contin_all)
-equidade_chisq_marginais_ing %>%
-  filter(variavel  %in% vars_nos_cruzados) %>% 
-  ggplot_cat(aes(x = ano,y = coef_contin,color = variavel)) +
-  ylim(c(0,1.2*max_conting))+
-  geom_line(size = 1.3) +
-  geom_point(size = 2) +
-  # geom_text(aes(label = round(coef_contin,2)),
-  #           vjust = -3,
-  #           # nudge_y = 50,
-  #           show.legend = F) +
-  geom_line(data = equidade_chisq_cruzados_ing,
-            aes(x = ano,y = coef_contin,col = "Total"),
-            size = 1.3
-  ) +
-  geom_point(data = equidade_chisq_cruzados_ing,
-            aes(x = ano,y = coef_contin,col = "Total"),
-            size = 2
-  )  +
-  # geom_text(data = equidade_chisq_cruzados_ing,
-  #           aes(x = ano,
-  #               y = coef_contin,
-  #               label = round(coef_contin,2),
-  #               col = "Total"),
-  #           vjust = -3,
-  #           # nudge_y = 50,
-  #           show.legend = F) +
-  labs(col = NULL,
-       title = "Coeficientes de contingência",
-       subtitle = "Observações nas distribuições cruzadas X marginais",
-       y = "Coeficiente de contingência"
-       ) -> p2
-
-
-
-
-
-
-p2_pl <- ggplotly_c(p2) %>% plotly::style(textposition = "top center")
-```
-
-
-```{r coeficientes_contingencia_medios}
-ingressos_equidade_cruzados[!(any_vazio) & is.finite(equidade_cruzados),
-                         .(equidade_cruzados = mean(equidade_cruzados),
-                           equidade_cruzados_pond = sum(n_siape*equidade_cruzados)/sum(n_siape)),
-                          .(ano = compet )] -> equidade_cruzados_tab
-
-
-ingressos_equidade_marginais[!(any_vazio) & 
-                            is.finite(equidade_marginais) & 
-                            variavel %in% vars_nos_cruzados,
-                          .(equidade_marginais = mean(equidade_marginais)),
-                          .(ano = compet,
-                            variavel)]  %>% 
-  ggplot_cat(aes(x = ano,y = equidade_marginais,color = variavel)) +
-  ylim(c(0,1.2*max(equidade_chisq_cruzados_ing$coef_contin,
-                   equidade_cruzados_tab$equidade_cruzados,
-                   equidade_cruzados_tab$equidade_cruzados_pond)))+
-  geom_line(size = 1.3) +
-  geom_point(size = 2) +
-  geom_hline(aes(yintercept = 1),size = 1.2) +
-  # geom_text(aes(label = round(equidade_marginais,1)),
-  #           vjust = -1,
-  #           # nudge_y = 50,
-  #           show.legend = F) +
-  ## média geral não ponderada
-  geom_line(data = equidade_cruzados_tab,
-            aes(x = ano,y = equidade_cruzados,col = "Total"),
-            size = 1.3
-  ) +
-  geom_point(data = equidade_cruzados_tab,
-            aes(x = ano,y = equidade_cruzados,col = "Total"),
-            size = 2
-  )  +
-  # geom_text(data = equidade_cruzados_tab,
-  #           aes(x = ano,
-  #               y = equidade_cruzados,
-  #               label = round(equidade_cruzados,2),
-  #               col = "Total"),
-  #           vjust = -1,
-  #           # nudge_y = 50,
-  #           show.legend = F) +
-  ## média geral ponderada
-  geom_line(data = equidade_cruzados_tab,
-            aes(x = ano,y = equidade_cruzados_pond,col = "Total (ponderado)"),
-            size = 1.3
-  ) +
-  geom_point(data = equidade_cruzados_tab,
-            aes(x = ano,y = equidade_cruzados_pond,col = "Total (ponderado)"),
-            size = 2
-  )  +
-  # geom_text(data = equidade_cruzados_tab,
-  #           aes(x = ano,
-  #               y = equidade_cruzados_pond,
-  #               label = round(equidade_cruzados_pond,2),
-  #               col = "Total (ponderado)"),
-  #           vjust = -1,
-  #           # nudge_y = 50,
-  #           show.legend = F) +
-  labs(title = "Médias das razões de equidade",
-       subtitle = "Observações nas distribuições cruzadas X marginais",
-       col = NULL,
-       y = "Índice de equidade") -> p3
-
-p3_pl <- ggplotly_c(p3) %>% plotly::style(textposition = "top center")
-```
-
-Os gráficos abaixo comparam duas formas de obtenção de um valor 'global', resumindo os níveis de inequidade
-nas categorias e nas variáveis. 
-
-À esquerda, compara-se o coeficiente de contingência global, obtido à partir das categorias cruzadas das variáveis de interesse, com os obtidos à partir das distribuições marginais de cada fator. À direita, de forma similar, são apresentados os valores médios dos índices de equidade i) calculados nas proporções das variáveis cruzadas e ii) calculados à partir das distribuições marginais. 
-
-```{r app_visoes_gerais}
-# 2. Exibe lado a lado (6 + 6 = 12 colunas no grid Bootstrap)
-bscols(
-  widths = c(6, 6),
-  p2_pl,
-  p3_pl
-)
-```
-
-```{r agregacoes_alternativas}
-ingressos_equidade_cruzados[,termo_chisq := ((p_siape - p_censo)^2)/p_censo]
-ingressos_equidade_cruzados[(!any_vazio & is.finite(equidade_cruzados)),
-                             .(variavel = 'Total',
-                               `Qui-quadrado` = sum(termo_chisq) ,
-                               `Qui-quadrado 'médio'` = mean(termo_chisq) %>% sqrt,
-                               `Média das diferenças absolutas` = mean(abs(p_siape - p_censo)),
-                               `Raiz da média das diferenças quadradas` = sqrt(mean((p_siape - p_censo)^2))),
-                             .(compet )]-> chisq_alt_cruzados
-
-
-ingressos_equidade_marginais[,termo_chisq := ((p_siape - p_censo)^2)/p_censo]
-ingressos_equidade_marginais[(!any_vazio & is.finite(equidade_marginais)),
-                             .(`Qui-quadrado` = sum(termo_chisq) ,
-                               `Qui-quadrado 'médio'` = mean(termo_chisq) %>% sqrt,
-                               `Média das diferenças absolutas` = mean(abs(p_siape - p_censo)),
-                               `Raiz da média das diferenças quadradas` = sqrt(mean((p_siape - p_censo)^2))),
-                             .(compet,variavel )] -> chisq_alt_marginais
-
-chisq_alt <- rbindlist(list(chisq_alt_marginais,chisq_alt_cruzados),fill = T)
-
-
-# medidas de interesse
-medidas_interesse <- setdiff(names(chisq_alt),c('compet','variavel'))
-
-
-# lista de fórmulas
-
-sapply(medidas_interesse,function(mdd){
-  chisq_alt[variavel %in% c("Total",vars_nos_cruzados),] %>% 
-    setnames(mdd,'mdd') %>% 
-    ggplot_cat(aes(x = compet,y = mdd,color = variavel)) +
-    geom_line(size = 1.3) +
-    geom_point(size = 2) +
-    labs(title = mdd,
-         subtitle = "Observações nas distribuições cruzadas X marginais",
-         col = NULL,
-         y = "Índice de equidade") -> p
-  return(p)
+i <- 0
+for(lst in vars_fora_cruzados){
+  i <- i + 1
+  # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
+  grafs_categ_sup[[lst]] %>% ggplotly_c() %>% 
+    ggplotly_c()%>% 
+    plotly::layout(margin = list(t = 80))  -> g1
+  grafs_equidade_sup[[lst]] %>% ggplotly_c() -> g2
+  grafs_contingencia_sup[[lst]] %>% ggplotly_c() -> g3
   
-  }) -> agregs_alternativas
-
-
-# lista de fórmulas
-list_alt <- 
-  c("Qui-quadrado" = "$$\\chi^2 = \\sum_{i = 1}^{k}{\\frac{(p_{i} - \\pi_{i})^2}{\\pi_{i}}}$$",
-    "Qui-quadrado 'médio'" = "$$\\frac{\\chi^2}{k}$$",
-    "Média das diferenças absolutas" = "$$\\frac{\\sum_{i = 1}^{k}{\\lvert p_{i} - \\pi_{i}\\rvert}}{k}$$",
-    "Raiz da média das diferenças quadradas" = "$$\\sqrt{\\frac{\\sum_{i = 1}^{k}{(p_{i} - \\pi_{i})^2}}{k}}$$"
+  # 2. bscols() do crosstalk cria o layout grid nativo para widgets
+  layout_loop <- layout_columns(
+    col_widths = c(12,6, 6), # 12 = 100% largura; 6 e 6 = 50% cada
+    # row_heights = c(120.2, 1),  # Linha 1 fica ligeiramente mais alta que a linha 2
+    # g1,
+    g2,
+    g3
   )
-
-```
-
-
-
-
-
-
-```{r agregacoes_alternativas_show, results='asis'}
-
-
-# 1. Criamos uma lista vazia para acumular o conteúdo na ordem correta
-conteudo_final <- tagList()
-
-for(nm in medidas_interesse){
   
-  # 2. Criamos o texto usando HTML ou a função HTML() para interpretar Markdown
-  paste0(
-    "\n\n## ",nm, "\n\n",
-    "\n\n",list_alt[nm],"\n\n"
-    ) %>% cat()
+  # 3. Guardar como uma aba do Bootstrap
+  abas_ext3[[i]] <- nav_panel(
+    title = list_vars_plot[lst],
+    card(
+      
+      card_body(g1,
+                height = '400px',
+                full_screen = TRUE
+                ),
+        
+      layout_loop
+      )
+  )
   
-  # 3. Criamos o gráfico plotly normalmente
-  p <- agregs_alternativas[[nm]] %>% ggplotly_c()%>% plotly::style(textposition = "top center")
+  # # 3. Imprime o widget completo sem quebrar a renderização do R Markdown
+  # print(htmltools::tagList(
+  #   # htmltools::tags$h3(paste("Iteração", i)),
+  #   layout_loop
+  # ))
   
-  # texto de quebra
-  # texto_quebra <- HTML("\n\n\n\n")
-  
-  # 4. Combinamos o texto e o gráfico desta iteração dentro da nossa lista master
-  # conteudo_final <- tagList(conteudo_final, texto_html, p,texto_quebra)
-  print(tagList(p))
+  cat('\n\n')
 }
 
-# 5. Fora do loop, imprimimos tudo na tela mantendo a ordem exata
-conteudo_final
+# 4. Renderizar o painel de abas completo de uma só vez
+do.call(navset_tab, abas_ext3)
 ```
+
+
+
+## Sem recorte: distribuições, razões de equidade e coeficientes de contingência
+
+```{r abas_extras}
+
+# Lista para guardar as abas
+abas_ext <- list()
+
+i <- 0
+for(lst in vars_fora_cruzados){
+  i <- i + 1
+  # cat(paste0("\n\n## ",list_vars_plot[lst],"\n\n"))
+  grafs_categ[[lst]] %>% ggplotly_c() %>% 
+    ggplotly_c()%>% 
+    plotly::layout(margin = list(t = 80))  -> g1
+  grafs_equidade[[lst]] %>% ggplotly_c() -> g2
+  grafs_contingencia[[lst]] %>% ggplotly_c() -> g3
+  
+  # 2. bscols() do crosstalk cria o layout grid nativo para widgets
+  layout_loop <- layout_columns(
+    col_widths = c(12,6, 6), # 12 = 100% largura; 6 e 6 = 50% cada
+    # row_heights = c(120.2, 1),  # Linha 1 fica ligeiramente mais alta que a linha 2
+    # g1,
+    g2,
+    g3
+  )
+  
+  # 3. Guardar como uma aba do Bootstrap
+  abas_ext[[i]] <- nav_panel(
+    title = list_vars_plot[lst],
+    card(
+      
+      card_body(g1,
+                height = '400px',
+                full_screen = TRUE
+                ),
+        
+      layout_loop
+      )
+  )
+  
+  # # 3. Imprime o widget completo sem quebrar a renderização do R Markdown
+  # print(htmltools::tagList(
+  #   # htmltools::tags$h3(paste("Iteração", i)),
+  #   layout_loop
+  # ))
+  
+  cat('\n\n')
+}
+
+# 4. Renderizar o painel de abas completo de uma só vez
+do.call(navset_tab, abas_ext)
+```
+
