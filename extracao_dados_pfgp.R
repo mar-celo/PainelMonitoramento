@@ -247,6 +247,8 @@ meses_analise <- grep("(12$)",meses_tabeloes,value = T) %>% c(.,ultimo_mes)
 
 
 ## Rodando consulta para cada mês
+lista_orgaos <- list()
+
 ti <- Sys.time()
 ativos_equidade_list <-
   sapply(meses_analise,
@@ -275,6 +277,11 @@ ativos_equidade_list <-
            }
 
            # return(colunas_dispoiniveis)})
+
+           lista_orgaos[[m]] <<- df_tabelao %>%
+             select(compet,co_orgao,no_orgao,sg_orgao) %>%
+             collect %>%
+             unique()
 
            cat("Filtro PEP e agregando\n\n")
            ativos_equidade <-
@@ -343,6 +350,7 @@ ativos_equidade_list <-
 
 # juntando todas as competências
 ativos_equidade_tab <- rbindlist(ativos_equidade_list,fill = T)
+lista_orgaos_tab <- rbindlist(lista_orgaos,fill = T)
 
 #### > ajustes nas variáveis ----
 
@@ -640,6 +648,7 @@ equidade_chisq_marginais[,`:=`(#coef_contin = 100*sqrt(qui_quadrado/max_qui),
 
 ### > salvando bases -------
 saveRDS(ativos_equidade_tab,'data-raw/data_pfgp/ativos_equidade_tab.rds')
+saveRDS(lista_orgaos_tab,'data-raw/data_pfgp/lista_orgaos_tab.rds')
 
 # salvando coeficientes
 save(ativos_equidade_cruzados,
